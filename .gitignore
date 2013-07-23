@@ -1,0 +1,13 @@
+bin/
+Release*
+Debug*
+*.suo
+*.user
+*.*sdf
+*.ncb
+*.psess
+*.vsp
+ipch/
+x64/
+src-/
+externals/physfs*
