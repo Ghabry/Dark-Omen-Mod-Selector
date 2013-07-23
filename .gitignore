@@ -11,3 +11,4 @@ ipch/
 x64/
 src-/
 externals/physfs*
+src/ctl.h
