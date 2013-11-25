@@ -1,7 +1,7 @@
 #include <Windows.h>
 
 //#include "ctl.h"
-#include "darkomen.h"
+//#include "darkomen.h"
 #include "detour.h"
 #include "modmenu.h"
 
@@ -39,9 +39,13 @@ void applyHooks()
 	VirtualProtect((void*)0x410000, 0x80000, PAGE_EXECUTE_READWRITE, &oldProt);
 	// NoCD Patch
 	*(WORD*) 0x48A5E0 = 0x01BA;
+	// Multiplayer overhead map in SinglePlayer
+	*(DWORD*)0x424320 = 0x000100E9;
+	*(WORD*)0x424324 = 0x9000;
 #ifdef _DEBUG
 	*(DWORD *) 0x004BF0A8 = 0; // Broken window mode hack
 #endif
+
 	//darkomen::ctl::applyHooksCTL();
 	darkomen::detour::init();
 	darkomen::modmenu::applyHooks();
