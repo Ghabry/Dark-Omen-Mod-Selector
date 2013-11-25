@@ -18,9 +18,6 @@
     <ClCompile Include="src\dllmain.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="src\darkomen.h">
-      <Filter>Headerdateien</Filter>
-    </ClCompile>
     <ClCompile Include="src\modmenu.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
@@ -29,9 +26,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\ctl.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="src\detour.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>

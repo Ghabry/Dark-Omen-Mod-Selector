@@ -1,6 +1,7 @@
 #pragma once
 
 #include <windows.h>
+#include <cstdio>
 
 namespace darkomen {
 namespace detour {
