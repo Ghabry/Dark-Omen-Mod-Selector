@@ -42,9 +42,22 @@ void applyHooks()
 	// Multiplayer overhead map in SinglePlayer
 	*(DWORD*)0x424320 = 0x000100E9;
 	*(WORD*)0x424324 = 0x9000;
-#ifdef _DEBUG
-	*(DWORD *) 0x004BF0A8 = 0; // Broken window mode hack
-#endif
+
+	DEVMODE devmode = {0};
+	devmode.dmSize = sizeof(devmode);
+	devmode.dmFields = DM_BITSPERPEL;
+	if (!IsDebuggerPresent()) {
+		devmode.dmPelsWidth = 640;
+		devmode.dmPelsHeight = 480;
+		devmode.dmBitsPerPel = 16;
+		devmode.dmFields |= DM_PELSWIDTH | DM_PELSHEIGHT;
+	}
+
+	ChangeDisplaySettings(&devmode, CDS_FULLSCREEN);
+
+	//if (IsDebuggerPresent()) {
+		*(DWORD *) 0x004BF0A8 = 0; // Run in window mode (debug mode)
+	//}
 
 	//darkomen::ctl::applyHooksCTL();
 	darkomen::detour::init();
