@@ -25,6 +25,8 @@ struct SCRIPT_OP {
 	char* arg_type;
 };
 
+char* string_table[10240] = { 0 };
+
 void* micro_alloc( int size );
 void micro_alloc_destroy();
 BOOL my_atoi( char* str, int len, DWORD* pdwResult );
@@ -190,7 +192,7 @@ __inline SCRIPT_OP* in_command_set( const char *str, unsigned int len )
 		if( index != -1 )
 		{
 			SCRIPT_OP* op = &ops[ index ];
-			if( len == op->name_len )
+			if( len == (unsigned)op->name_len )
 			{
 				if( !memcmp( str, op->name, len ) )
 				{
@@ -434,7 +436,7 @@ bool ImportScript( const char* szFileName )
 						{
 							DWORD num_arg_groups = 0;
 							DWORD i = 0;
-							while( 1 )
+							for(;;)
 							{
 								DWORD dw;
 								if( !my_atoi( str, len, &dw ) )
@@ -625,7 +627,7 @@ bool ImportScript( const char* szFileName )
 
 lbl_end:
 	if( file != NULL ) VirtualFree( file, 0, MEM_RELEASE );
-	return bResult;
+	return !!bResult;
 }
 
 
@@ -763,76 +765,31 @@ void UnloadScript() {
 	}
 
 	VirtualProtect((void*)0x0040E000, 0x1F000, dwPrevProtect, &dwPrevProtect);
+
+	jmps = NULL;
+	targets = NULL;
 }
 
 /////////////////////////////
-// cheesy allocator
+// allocator
 /////////////////////////////////
-void* alloc_region = NULL;
-BYTE* end_region = 0; 
-BYTE* end_page = 0; 
-BYTE* alloc_ptr = 0;
-void micro_alloc_destroy()
-{
-	while( alloc_region != NULL )
-	{
-		void* r = alloc_region;
-		alloc_region = *((DWORD**)alloc_region);
-		VirtualFree( r, 0, MEM_RELEASE );
+void* micro_alloc(int size) {
+	for (int i = 0; i < 10240; ++i) {
+		if (string_table[i] == NULL) {
+			string_table[i] = (char*)malloc(size);
+			memset(string_table[i], '\0', size);
+			return string_table[i];
+		}
 	}
-	end_region = 0;
-	end_page = 0;
-	alloc_ptr = 0;
+
+	return NULL;
 }
-void* micro_alloc( int size )
-{
-	static SYSTEM_INFO sSysInfo = { 0 };
-	BOOL new_region;
 
-	if( sSysInfo.dwPageSize == 0 ) // initialize
-	{
-		GetSystemInfo(&sSysInfo);
-	}
-
-	if( ( alloc_ptr + size ) >= end_page ) 
-	{
-		
-		alloc_ptr = end_page;
-
-		if( alloc_ptr == end_region )
-		{	
-			alloc_ptr = (BYTE*) VirtualAlloc( NULL, sSysInfo.dwAllocationGranularity, MEM_RESERVE, PAGE_NOACCESS );
-			end_region = alloc_ptr + sSysInfo.dwAllocationGranularity;
-			new_region = TRUE;
-		}
-		else
-		{
-			new_region = FALSE;
-		}
-
-		if( alloc_ptr != NULL )
-		{ 
-			alloc_ptr = (BYTE*) VirtualAlloc( alloc_ptr, sSysInfo.dwPageSize, MEM_COMMIT, PAGE_READWRITE );
-			end_page = alloc_ptr + sSysInfo.dwPageSize;
-			
-			// half-baked track regions
-			if( new_region != FALSE )
-			{
-				*((DWORD*)alloc_ptr) = (DWORD)alloc_region;
-				alloc_region = alloc_ptr;
-				alloc_ptr += 4;
-			}
-		}
-
-		if( alloc_ptr == NULL )
-		{
-			end_region = 0; 
-			end_page = 0; 
+void micro_alloc_destroy() {
+	for (int i = 0; i < 10240; ++i) {
+		if (string_table[i] != NULL) {
+			free(string_table[i]);
+			string_table[i] = NULL;
 		}
 	}
-
-	// "bump the pointer"
-	void* p = alloc_ptr;
-	alloc_ptr += size;
-	return p;
 }
