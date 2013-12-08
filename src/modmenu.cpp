@@ -1,6 +1,7 @@
 #include "modmenu.h"
 #include "detour.h"
 #include "functions.h"
+#include "util.h"
 
 
 namespace darkomen {
@@ -23,13 +24,20 @@ namespace modmenu {
 	void* modMenuHandle = 0;
 	char* modList = 0;
 
-	char darkomenPath[MAX_PATH + 1] = {0};
-	char darkomenFullPath[MAX_PATH + 1] = {0};
-	char currentMod[MAX_PATH + 1] = {0};
+	// Path to the Dark Omen directory
+	std::string darkomenPath = "";
+	// Path to the Dark Omen exe
+	std::string darkomenExePath = "";
+	// Path to the Mods directory
+	std::string darkomenModPath = "";
+	// Name of the current mod directory
+	std::string currentMod = "";
 
 	int lastHover = -1;
 
+	// Modified bytes via patched EngRel
 	std::vector<undoStruct> undoData;
+	// EngRel was patched using a modified Prg.exe
 	bool engrelPatched = false;
 
 	int selectModClicked(int, int, int, int)
@@ -42,6 +50,7 @@ namespace modmenu {
 		return 1;
 	}
 
+	// Adds the SELECT MOD item to the main menu
 	void hookMainMenuInitImpl() {
 		//fprintf(a, "testHook MainMenu geth\n");
 		int* scene = *(int**)0x5022A0;
@@ -84,6 +93,7 @@ namespace modmenu {
 		}
 	}
 
+	// Sets the font for SELECT MOD
 	void hookMainMenuInitImpl2() {
 		//fprintf(a, "testHook MainMenu2 geth\n");
 		int* scene = *(int**)0x5022A0;
@@ -113,13 +123,15 @@ namespace modmenu {
 
 	int updateModList()
 	{
+		// Mod list data structure seems to be:
+		// Every element has size 308
+		// Metadata can be stored at elementpos + 53 (here: mod folder name)
+
 		free(modList);
 		modList = 0;
 		WIN32_FIND_DATA findData;
-		std::string modPath(darkomenPath);
-		modPath += "\\Mods\\";
-		std::string searchPath(modPath);
-		searchPath += "*";
+		std::string searchPath(darkomenModPath);
+		searchPath += "\\*";
 		HANDLE handle = findFirstFile_orig(searchPath.c_str(), &findData);
 		int dircount = 0;
 		bool first = true;
@@ -160,7 +172,7 @@ namespace modmenu {
 				first = false;
 				if (findData.cFileName[0] != '.' && (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 				{
-					std::string modfile(modPath);
+					std::string modfile(darkomenModPath + "\\");
 					modfile += findData.cFileName;
 					detour::trace("Checking Mod: %s", findData.cFileName);
 					modfile += "\\Mod.ini";
@@ -178,7 +190,7 @@ namespace modmenu {
 						continue;
 					}
 
-					if (!strcmp(findData.cFileName, currentMod))
+					if (!strcmp(findData.cFileName, currentMod.c_str()))
 					{
 						index = i;
 					}
@@ -195,6 +207,8 @@ namespace modmenu {
 		return index;
 	}
 
+	// Event handler when any menu item is hovered in the Mod Menu
+	// No idea how that works, but other scenes do it the same way ;)
 	int modMenuHovered(int, int, int, int id)
 	{
 		int* font = *(int**)0x526D70;
@@ -207,29 +221,36 @@ namespace modmenu {
 		return 1;
 	}
 
+	// Event handler when any menu item in the Mod Menu is clicked
 	int modMenuClicked(int a1, int, int, int)
 	{
 		modMenuState = 2;
+		// Unknown purpose, other scenes do it the same way :P
 		sub_41C320(0, 7, 255);
 		sub_418020(9);
 
-		if (a1 == 3) // Load
+		if (a1 == 3) // Load button
 		{
-
+			// Selected item in the mod menu
 			int selectedIndex = getSelectedListIndex_orig(modMenuHandle, 10);
 			std::string lastMod(darkomenPath);
 			lastMod += "\\Mods\\lastmod.ini";
-			FILE* f = fopen(lastMod.c_str(), "w");
+			FILE* f = openFile(lastMod, "w");
+			// First one is a special case to roll back to the original game
 			if (selectedIndex <= 0)
 			{
+				// File already truncated by "w"
 				detour::trace("Switching to: Original game");
-				currentMod[0] = '\0';
+				currentMod = "";
 			}
 			else
 			{
 				detour::trace("Switching to: %s", (modList + selectedIndex * 308 + 53));
-				strncpy(currentMod, (modList + selectedIndex * 308 + 53), MAX_PATH);
-				fprintf(f, "%s", currentMod);
+				// The list is some very strange data structure ;)
+				char buffer[MAX_PATH + 1] = { 0 };
+				strncpy(buffer, (modList + selectedIndex * 308 + 53), MAX_PATH);
+				currentMod = buffer;
+				fprintf(f, "%s", currentMod.c_str());
 			}
 			fclose(f);
 			undoChanges();
@@ -306,17 +327,19 @@ namespace modmenu {
 
 	void updateCurrentMod()
 	{
-		std::string lastMod(darkomenPath);
-		lastMod += "\\Mods\\lastmod.ini";
+		std::string lastMod(darkomenModPath);
+		lastMod += "\\lastmod.ini";
 		std::ifstream file(lastMod.c_str());
 		if (!file.fail())
 		{
-			file.getline(currentMod, MAX_PATH);
+			char buffer[MAX_PATH + 1] = { 0 };
+			file.getline(buffer, MAX_PATH);
+			currentMod = buffer;
 			lastMod = getCurrentModPath();
-			if (!strcmp(lastMod.c_str(), "") || GetFileAttributesA(lastMod.c_str()) == -1)
+			if (lastMod.empty() || GetFileAttributesA(lastMod.c_str()) == -1)
 			{
 				detour::trace("Mod was invalid, reverting to original game");
-				currentMod[0] = '\0';
+				currentMod = "";
 			}
 			file.close();
 		}
@@ -332,50 +355,37 @@ namespace modmenu {
 		__in_opt  HANDLE hTemplateFile
 		)
 	{
-		char _path[MAX_PATH + 1];
-		GetFullPathName(lpFileName, MAX_PATH + 1, _path, NULL);
+		char fileName[MAX_PATH + 1];
+		GetFullPathName(lpFileName, MAX_PATH + 1, fileName, NULL);
 
-		if (modHookFailed || currentMod[0] == '\0')
+		if (modHookFailed || currentMod.empty())
 		{
-			return createFile_orig(_path, dwDesiredAccess, dwShareMode,
+			return createFile_orig(lpFileName, dwDesiredAccess, dwShareMode,
 				lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes,
 				hTemplateFile);
 		}
-		detour::trace("CreateFile: %s", _path);
+		detour::trace("CreateFile: %s", fileName);
 
-		std::string basePath(darkomenPath);
-		std::transform(basePath.begin(), basePath.end(), basePath.begin(), ::tolower);
-		std::string newPath(_path);
-		std::transform(newPath.begin(), newPath.end(), newPath.begin(), ::tolower);
+		std::string newPath = toModPath(fileName);
 
-		unsigned int pos = newPath.find(basePath);
-		if (pos == std::string::npos)
+		if (newPath.empty())
 		{
-			return createFile_orig(_path, dwDesiredAccess, dwShareMode,
+			return createFile_orig(lpFileName, dwDesiredAccess, dwShareMode,
 				lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes,
 				hTemplateFile);
 		}
 
-		pos += strlen(basePath.c_str());
-
-		newPath = getCurrentModPath(false);
-
-		const char* secondPart = _path + pos;
-
-		newPath += secondPart;
-
-		const char* _newPath = newPath.c_str();
-
-		HANDLE handle = createFile_orig(_newPath, dwDesiredAccess, dwShareMode,
+		HANDLE handle = createFile_orig(newPath.c_str(), dwDesiredAccess, dwShareMode,
 			lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes,
 			hTemplateFile);
 		if (handle == INVALID_HANDLE_VALUE)
 		{
-			return createFile_orig(_path, dwDesiredAccess, dwShareMode,
+			return createFile_orig(lpFileName, dwDesiredAccess, dwShareMode,
 				lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes,
 				hTemplateFile);
 		}
-		detour::trace("Redirected to: %s", _newPath);
+
+		detour::trace("Redirected to: %s", newPath.c_str());
 		return handle;
 	}
 
@@ -384,120 +394,115 @@ namespace modmenu {
 		__out  LPWIN32_FIND_DATA lpFindFileData
 		)
 	{
-		char* _path = (char*)lpFileName;
+		char fileName[MAX_PATH + 1];
+		GetFullPathName(lpFileName, MAX_PATH + 1, fileName, NULL);
 
-		if (modHookFailed || currentMod[0] == '\0')
+		if (modHookFailed || currentMod.empty())
 		{
 			return findFirstFile_orig(lpFileName, lpFindFileData);
 		}
 
-		detour::trace("FindFirstFile: %s", _path);
+		detour::trace("FindFirstFile: %s", fileName);
 
-		// Replace the Savegame path
-		std::string savePath(darkomenPath);
-		savePath += "\\SaveGame";
-		std::transform(savePath.begin(), savePath.end(), savePath.begin(), ::tolower);
+		std::string newPath = toModPath(fileName);
+		if (newPath.empty())
+		{
+			return findFirstFile_orig(lpFileName, lpFindFileData);
+		}
 
-		// Replace 2parm
-		std::string _2parm(darkomenPath);
+		std::string originalPath = toLowerCase(fileName);
+
+		// Savegame and 2parm are always redirected
+		// This way only mod armies and mod savegames are displayed
+
+		std::string dopath_lc = toLowerCase(darkomenPath);
+		// Redirect the Savegame path
+		std::string savePath(dopath_lc);
+		savePath += "\\savegame";
+
+		if (startsWith(originalPath, savePath)) {
+			std::string modsavePath(getCurrentModPath() + "\\SaveGame");
+
+			// Create directory if missing
+			if (GetFileAttributesA(modsavePath.c_str()) == -1)
+			{
+				detour::trace("Creating save directory: %s", modsavePath.c_str());
+				if (!CreateDirectoryA(modsavePath.c_str(), NULL)) {
+					detour::trace("ERROR: Directory creation failed");
+				}
+			}
+
+			detour::trace("Redirected to: %s", newPath.c_str());
+			return findFirstFile_orig(newPath.c_str(), lpFindFileData);
+		}
+
+		// Redirect 2parm
+		std::string _2parm(dopath_lc);
+		std::string gamedata = _2parm + "\\gamedata";
 		_2parm += "\\gamedata\\2parm";
-		std::transform(_2parm.begin(), _2parm.end(), _2parm.begin(), ::tolower);
 
-		std::string newPath(_path);
-		std::transform(newPath.begin(), newPath.end(), newPath.begin(), ::tolower);
+		if (startsWith(originalPath, _2parm)) {
+			std::string modgamedata(getCurrentModPath() + "\\GameData");
+			std::string mod2parm(getCurrentModPath() + "\\GameData\\2parm");
 
-		unsigned int pos = newPath.find(savePath);
-		unsigned int pos2 = newPath.find(_2parm);
-		if (pos != std::string::npos)
-		{
-			static bool firstTime = true;
-			if (firstTime)
+			// Create directory if missing
+			if (GetFileAttributesA(mod2parm.c_str()) == -1)
 			{
-				firstTime = false;
-				return findFirstFile_orig(lpFileName, lpFindFileData);
+				if (GetFileAttributesA(modgamedata.c_str()) == -1) {
+					detour::trace("Creating GameData directory: %s", modgamedata.c_str());
+					if (!CreateDirectoryA(modgamedata.c_str(), NULL)) {
+						detour::trace("ERROR: Directory creation failed");
+					}
+				}
+				detour::trace("Creating 2parm directory: %s", mod2parm.c_str());
+				if (!CreateDirectoryA(mod2parm.c_str(), NULL)) {
+					detour::trace("ERROR: Directory creation failed");
+				}
 			}
-			pos += strlen(savePath.c_str());
 
-			std::string newPath = getCurrentModPath(false);
-			newPath += "\\Savegame";
-
-			char* secondPart = _path + pos;
-
-			newPath += secondPart;
-
-			const char* _newPath = newPath.c_str();
-
-			detour::trace("Redirected to: %s", _newPath);
-
-			return findFirstFile_orig(_newPath, lpFindFileData);
-		}
-		else if (pos2 != std::string::npos)
-		{
-			static bool firstTime = true;
-			if (firstTime)
-			{
-				firstTime = false;
-				return findFirstFile_orig(lpFileName, lpFindFileData);
-			}
-			pos2 += strlen(_2parm.c_str());
-
-			std::string newPath = getCurrentModPath(false);
-			newPath += "\\GameData\\2parm";
-
-			char* secondPart = _path + pos2;
-
-			newPath += secondPart;
-
-			const char* _newPath = newPath.c_str();
-
-			detour::trace("Redirected to: %s", _newPath);
-
-			return findFirstFile_orig(_newPath, lpFindFileData);
+			detour::trace("Redirected to: %s", newPath.c_str());
+			return findFirstFile_orig(newPath.c_str(), lpFindFileData);
 		}
 
-		return findFirstFile_orig(lpFileName, lpFindFileData);
+		if (GetFileAttributesA(newPath.c_str()) == -1)
+		{
+			return findFirstFile_orig(lpFileName, lpFindFileData);
+		}
+
+		detour::trace("Redirected to: %s", newPath.c_str());
+
+		return findFirstFile_orig(newPath.c_str(), lpFindFileData);
 	}
 
 	BOOL WINAPI MyDeleteFileA(
 		__in  LPCTSTR lpFileName
 		)
 	{
-		char _path[MAX_PATH + 1];
-		GetFullPathName(lpFileName, MAX_PATH + 1, _path, NULL);
+		char fileName[MAX_PATH + 1];
+		GetFullPathName(lpFileName, MAX_PATH + 1, fileName, NULL);
 
-		if (modHookFailed || currentMod[0] == '\0')
+		if (modHookFailed || currentMod.empty())
 		{
 			return deleteFile_orig(lpFileName);
 		}
 
-		detour::trace("DeleteFile: %s", _path);
+		detour::trace("DeleteFile: %s", fileName);
 
-		std::string basePath(darkomenPath);
-		std::transform(basePath.begin(), basePath.end(), basePath.begin(), ::tolower);
-		std::string newPath(_path);
-		std::transform(newPath.begin(), newPath.end(), newPath.begin(), ::tolower);
+		std::string newPath = toModPath(fileName);
 
-		unsigned int pos = newPath.find(basePath);
-		if (pos == std::string::npos)
+		if (newPath.empty())
 		{
 			return deleteFile_orig(lpFileName);
 		}
-		pos += strlen(basePath.c_str());
 
-		newPath = getCurrentModPath(false);
-
-		const char* secondPart = _path + pos;
-
-		newPath += secondPart;
-
-		const char* _newPath = newPath.c_str();
-
-		if (GetFileAttributesA(_newPath) == -1)
+		if (GetFileAttributesA(newPath.c_str()) == -1)
 		{
 			return deleteFile_orig(lpFileName);
 		}
-		detour::trace("Redirected to: %s", _newPath);
-		return deleteFile_orig(_newPath);
+
+		detour::trace("Redirected to: %s", newPath.c_str());
+
+		return deleteFile_orig(newPath.c_str());
 	}
 
 	void applyHooks()
@@ -506,6 +511,7 @@ namespace modmenu {
 		//detour::hookFunc(hookOptionMenuInit2, 0x414C96);
 		//*(DWORD*)0x414BD2 = 480; // Exit Pos Option Menu
 		detour::trace("Modifying Main Menu");
+		// Rearrage menu items
 		*(DWORD*)0x42C1E9 = 250-25; // New Campaign
 		*(DWORD*)0x42C208 = 250-25;
 
@@ -542,28 +548,31 @@ namespace modmenu {
 		detour::trace("Hooking DeleteFile");
 		deleteFile_orig = (deleteFile_t)DetourFunction((PBYTE)DeleteFileA, (PBYTE)MyDeleteFileA);
 
-		GetModuleFileNameA(NULL, darkomenPath, MAX_PATH);
-		GetModuleFileNameA(NULL, darkomenFullPath, MAX_PATH);
-		detour::trace("GetModuleFilename: %s", darkomenPath);
-		if (strrchr(darkomenPath, '\\') != NULL)
+		char buffer[MAX_PATH + 1] = { 0 };
+		GetModuleFileNameA(NULL, buffer, MAX_PATH);
+		darkomenExePath = buffer;
+
+		detour::trace("GetModuleFilename: %s", darkomenExePath.c_str());
+
+		// Go up twice (first is in exe directory, next in DO directory)
+		std::string doPath = getPathOfFile(getPathOfFile(darkomenExePath));
+		if (doPath != "")
 		{
-			strrchr(darkomenPath, '\\')[0] = '\0';
-			if (strrchr(darkomenPath, '\\') != NULL)
+			// Set up everything
+			darkomenPath = doPath;
+			detour::trace("Dark Omen path: %s", darkomenPath.c_str());
+			darkomenPath = doPath;
+			darkomenModPath = darkomenPath + "\\Mods";
+			detour::trace("Mod folder path: %s", darkomenModPath.c_str());
+			if (GetFileAttributes(darkomenModPath.c_str()) != -1)
 			{
-				strrchr(darkomenPath, '\\')[0] = '\0';
-				detour::trace("Dark Omen path: %s", darkomenPath);
-				std::string lastMod(darkomenPath);
-				lastMod += "\\Mods";
-				detour::trace("Mod folder path: %s", lastMod.c_str());
-				if (GetFileAttributes(lastMod.c_str()) != -1)
-				{
-					detour::trace("Mods folder found");
-					detour::trace("Initialization was successful");
-					modHookFailed = false;
-				}
-				updateCurrentMod();
-				patchEngRel();
+				// Yeah!
+				detour::trace("Mods folder found");
+				detour::trace("Initialization was successful");
+				modHookFailed = false;
 			}
+			updateCurrentMod();
+			patchEngRel();
 		}
 		if (modHookFailed)
 		{
@@ -572,6 +581,7 @@ namespace modmenu {
 		}
 	}
 
+	// Patches the data segment of EngRel based on a patched EngRel in Prg dir
 	void patchEngRel()
 	{
 		if (modHookFailed || engrelPatched)
@@ -579,44 +589,49 @@ namespace modmenu {
 			return;
 		}
 
-		std::string modPath = getCurrentModPath();
-		if (!strcmp(modPath.c_str(), ""))
+		std::string modEngRelPath = getCurrentModPath();
+		if (modEngRelPath.empty())
 		{
 			return;
 		}
-		modPath += "\\Prg\\EngRel.exe";
 
-		std::ifstream modIn(modPath.c_str(), std::ios::in | std::ios::binary);
-		if (modIn.fail())
+		// Path to modded EngRel patches are applied from
+		modEngRelPath += "\\Prg\\EngRel.exe";
+
+		FILE* modIn = openFile(modEngRelPath, "r");
+		if (!modIn)
 		{
-			detour::trace("No EngRel found at %s", modPath.c_str());
-			return;
-		}
-		std::ifstream realIn(darkomenFullPath, std::ios::in | std::ios::binary);
-		if (realIn.fail())
-		{
-			detour::trace("ERROR: Couldn't access EngRel at %s. PLEASE REPORT THIS!", darkomenFullPath);
+			detour::trace("No EngRel found at %s. No patches applied.", modEngRelPath.c_str());
 			return;
 		}
 
-		detour::trace("Found EngRel at %s", modPath.c_str());
+		FILE* realIn = openFile(darkomenExePath, "r");
+		if (!realIn)
+		{
+			detour::trace("ERROR: Couldn't access EngRel at %s. PLEASE REPORT THIS!", darkomenExePath.c_str());
+			return;
+		}
 
+		detour::trace("Found EngRel at %s", modEngRelPath.c_str());
+
+		// Read the data segment
 		// BD000 -> 4BF000
 		// FF3FF -> 5013FF
-		modIn.seekg(0xbd000, std::ios::beg);
-		realIn.seekg(0xbd000, std::ios::beg);
+		fseek(modIn, 0xbd000, SEEK_SET);
+		fseek(realIn, 0xbd000, SEEK_SET);
 
-		char modData[271359];
-		char origData[271359];
+		const int dataseg_size = 271359;
+		char modData[dataseg_size];
+		char origData[dataseg_size];
 
-		modIn.read(modData, 271359);
-		realIn.read(origData, 271359);
+		fread(modData, 1, dataseg_size, modIn);
+		fread(origData, 1, dataseg_size, realIn);
 
-		modIn.close();
-		realIn.close();
+		fclose(modIn);
+		fclose(realIn);
 
 		undoStruct undoStr;
-		for (int i = 0; i < 271359; ++i)
+		for (int i = 0; i < dataseg_size; ++i)
 		{
 			if (modData[i] != origData[i])
 			{
@@ -633,8 +648,13 @@ namespace modmenu {
 		engrelPatched = true;
 	}
 
+	// Revert EngRel changes
 	void undoChanges()
 	{
+		if (!engrelPatched) {
+			return;
+		}
+
 		detour::trace("Reverting EngRel to original version");
 
 		for (size_t i = 0; i < undoData.size(); ++i)
@@ -650,23 +670,40 @@ namespace modmenu {
 		engrelPatched = false;
 	}
 
-	std::string getCurrentModPath(bool trace)
+	// Get path of currently enabled mod
+	std::string getCurrentModPath()
 	{
-		if (currentMod[0] == '\0')
+		if (currentMod.empty())
 		{
-			if (trace)
-				detour::trace("Current Mod: None (Original Game)");
+			detour::trace("Current Mod: None (Original Game)");
 			return "";
 		}
-		std::string modPath = darkomenPath;
-		modPath += "\\Mods\\";
-		modPath += currentMod;
-		if (trace)
-		{
-			detour::trace("Current Mod: %s", currentMod);
-			detour::trace("Current Mod Path: %s", modPath.c_str());
-		}
+
+		std::string modPath = darkomenModPath;
+		modPath += "\\" + currentMod;
+
+		detour::trace("Current Mod: %s", currentMod.c_str());
+		detour::trace("Current Mod Path: %s", modPath.c_str());
+
 		return modPath;
+	}
+
+	bool isInDarkOmenPath(const std::string& path) {
+		std::string p = toLowerCase(path);
+		std::string dopath = toLowerCase(darkomenPath);
+		return startsWith(p, dopath);
+	}
+
+	std::string toModPath(const std::string& path) {
+		if (!isInDarkOmenPath(path)) {
+			return "";
+		}
+
+		size_t dopath_size = darkomenPath.size();
+
+		std::string subdir = path.substr(dopath_size);
+
+		return getCurrentModPath() + subdir;
 	}
 }
 }

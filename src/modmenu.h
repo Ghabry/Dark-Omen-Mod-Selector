@@ -30,8 +30,10 @@ namespace modmenu {
 	extern void* modMenuHandle;
 	extern char* modList;
 
-	extern char darkomenPath[MAX_PATH + 1];
-	extern char currentMod[MAX_PATH + 1];
+	extern std::string darkomenPath;
+	extern std::string darkomenExePath;
+	extern std::string darkomenModPath;
+	extern std::string currentMod;
 
 	extern int lastHover;
 
@@ -110,6 +112,9 @@ namespace modmenu {
 
 	void undoChanges();
 
-	std::string getCurrentModPath(bool trace = true);
+	std::string getCurrentModPath();
+
+	bool isInDarkOmenPath(const std::string& path);
+	std::string toModPath(const std::string& path);
 }
 }

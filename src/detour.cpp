@@ -66,7 +66,12 @@ namespace detour {
 			out += str;
 
 			// Write to file
-			fprintf(traceFile, "%s\n", out.c_str());
+			out += "\n";
+			fprintf(traceFile, "%s", out.c_str());
+
+			if (IsDebuggerPresent()) {
+				OutputDebugString(out.c_str());
+			}
 
 			va_end(args);
 		}
