@@ -45,11 +45,11 @@ void applyHooks()
 
 	DEVMODE devmode = {0};
 	devmode.dmSize = sizeof(devmode);
+	devmode.dmBitsPerPel = 16;
 	devmode.dmFields = DM_BITSPERPEL;
 	if (!IsDebuggerPresent()) {
 		devmode.dmPelsWidth = 640;
 		devmode.dmPelsHeight = 480;
-		devmode.dmBitsPerPel = 16;
 		devmode.dmFields |= DM_PELSWIDTH | DM_PELSHEIGHT;
 	}
 
