@@ -40,6 +40,7 @@ namespace modmenu {
 	struct undoStruct;
 	extern std::vector<undoStruct> undoData;
 	extern bool engrelPatched;
+	extern bool whmtgPatched;
 
 	int selectModClicked(int, int, int, int);
 
@@ -111,6 +112,8 @@ namespace modmenu {
 	void patchEngRel();
 
 	void undoChanges();
+
+	void loadWHMTG();
 
 	std::string getCurrentModPath();
 

@@ -1,25 +1,7 @@
+#include "detour.h"
+#include "functions.h"
+#include "import_script.h"
 #include <windows.h>
-
-////// delete this if your compiler doesn't suck //////
-namespace my_string
-{
-	int memcmp( const void* pvBuf1, const void* pvBuf2, size_t cnt ){
-		unsigned char* buf1 = (unsigned char*)pvBuf1;
-		unsigned char* buf2 = (unsigned char*)pvBuf2;
-		int result = 0;
-		while( buf1 != ((unsigned char*)pvBuf1) + cnt) if(result = *buf1++ - *buf2++) break;
-		return result;
-	}
-	void* memcpy( void* pvDst, const void* pvSrc, size_t cnt ){
-		unsigned char* dst = (unsigned char*)pvDst;
-		unsigned char* src = (unsigned char*)pvSrc;
-		while(src != ((unsigned char*)pvSrc + cnt)) *dst++ = *src++;
-		return pvDst;
-	}
-}
-#define memcmp    my_string::memcmp
-#define memcpy    my_string::memcpy
-//////////////////////////////////////////////////////////
 
 #define LPS( x ) sizeof(x) - 1, x
 #define WRITE_CODE( dw ) if( cp < &code[_countof(code) - 1] ) *cp++ = dw;
@@ -46,12 +28,9 @@ struct SCRIPT_OP {
 void* micro_alloc( int size );
 void micro_alloc_destroy();
 BOOL my_atoi( char* str, int len, DWORD* pdwResult );
-char* ReadInTextFile( char* szFileName );
-void __cdecl Log( char* fmt, ...);
+char* ReadInTextFile( const char* szFileName );
 SCRIPT_OP* in_command_set( const char *str, unsigned int len );
 int GetTok( char*& str );
-BOOL ImportScript( char* szFileName );
-
 
 LABEL_ENTRY* jmps = NULL;
 LABEL_ENTRY* targets = NULL;
@@ -251,7 +230,7 @@ __inline int GetTok( char*& str )
 
 
 
-BOOL ImportScript( char* szFileName )
+bool ImportScript( const char* szFileName )
 {
 	char* str;
 	int len;
@@ -288,7 +267,7 @@ BOOL ImportScript( char* szFileName )
 			op = in_command_set( str, len );
 			if( op == NULL )
 			{
-				Log( "line %d: Unknown command. %s\r\n", line, str );
+				darkomen::detour::trace( "WHMTG: line %d: Unknown command. %s", line, str );
 				goto lbl_end;
 			}
 
@@ -311,7 +290,7 @@ BOOL ImportScript( char* szFileName )
 							DWORD dw;
 							if( !my_atoi( str, len, &dw ) )
 							{
-								Log( "line %d: bad formatting, expected integer value. Arg# %d.\r\n", line, count + 1 );
+								darkomen::detour::trace("WHMTG: line %d: bad formatting, expected integer value. Arg# %d.", line, count + 1);
 								goto lbl_end;
 							}
 							WRITE_CODE( dw );
@@ -323,8 +302,8 @@ BOOL ImportScript( char* szFileName )
 
 							if( str[0] != '\"' ) 
 							{
-								Log( "line %d: bad formatting, expected text value."
-									" Text must be enclosed within double quote(\") characters. Arg# %d.\r\n", line, count + 1 );
+								darkomen::detour::trace("WHMTG: line %d: bad formatting, expected text value."
+									" Text must be enclosed within double quote(\") characters. Arg# %d.", line, count + 1 );
 								goto lbl_end;
 							}
 
@@ -338,8 +317,8 @@ BOOL ImportScript( char* szFileName )
 								if( str[len] == '\"' ) len++;
 								else
 								{
-									Log( "line %d: bad formatting, expected text value."
-											" Text must be enclosed within double quote(\") characters. Arg# %d.\r\n", line, count + 1 );
+									darkomen::detour::trace("WHMTG: line %d: bad formatting, expected text value."
+											" Text must be enclosed within double quote(\") characters. Arg# %d.", line, count + 1 );
 									goto lbl_end;
 								}
 							}
@@ -347,7 +326,7 @@ BOOL ImportScript( char* szFileName )
 							char* text = (char*) micro_alloc( len-1 );
 							if( text == NULL )
 							{
-								Log( "Internal Error (script line %d): Failed to allocate %d bytes. Arg# %d.\r\n", line, len-1, count + 1 );
+								darkomen::detour::trace("WHMTG: Internal Error (script line %d): Failed to allocate %d bytes. Arg# %d.", line, len - 1, count + 1);
 								goto lbl_end;
 							}
 							memcpy( text, &str[1], len-2 );
@@ -360,13 +339,13 @@ BOOL ImportScript( char* szFileName )
 							char* text = (char*) micro_alloc( len+1 );
 							if( text == NULL )
 							{
-								Log( "Internal Error (script line %d): Failed to allocate %d bytes. Arg# %d.\r\n", line, len+1, count + 1 );
+								darkomen::detour::trace("WHMTG: Internal Error (script line %d): Failed to allocate %d bytes. Arg# %d.", line, len + 1, count + 1);
 								goto lbl_end;
 							}
 							LABEL_ENTRY* le = (LABEL_ENTRY*) micro_alloc( sizeof(LABEL_ENTRY) );
 							if( le == NULL )
 							{
-								Log( "Internal Error (script line %d): Failed to allocate %d bytes. Arg# %d.\r\n", line, sizeof(LABEL_ENTRY), count + 1 );
+								darkomen::detour::trace("WHMTG: Internal Error (script line %d): Failed to allocate %d bytes. Arg# %d.", line, sizeof(LABEL_ENTRY), count + 1);
 								goto lbl_end;
 							}
 							memcpy( text, str, len );
@@ -384,17 +363,17 @@ BOOL ImportScript( char* szFileName )
 							DWORD dw;			
 							if( ( len < 4 ) || ( str[0] != 'v' ) || ( str[1] != 'a' ) || ( str[2] != 'r' ) || ( str[3] != '_' ) )
 							{
-								Log( "line %d: bad formatting, expected var_ keyword. Arg# %d.\r\n", line, count + 1 );
+								darkomen::detour::trace("WHMTG: line %d: bad formatting, expected var_ keyword. Arg# %d.", line, count + 1);
 								goto lbl_end;
 							}
 							if( !my_atoi( &str[4], len - 4, &dw ) )
 							{
-								Log( "line %d: bad formatting, unrecognized var. Arg# %d.\r\n", line, count + 1 );
+								darkomen::detour::trace("WHMTG: line %d: bad formatting, unrecognized var. Arg# %d.", line, count + 1);
 								goto lbl_end;
 							}
 							if( dw > 23 ) 
 							{
-								Log( "line %d: var index is outside of range. Arg# %d.\r\n", line, count + 1 );
+								darkomen::detour::trace("WHMTG: line %d: var index is outside of range. Arg# %d.", line, count + 1);
 								goto lbl_end;
 							}
 							WRITE_CODE( ( var_base + dw * 4 ) );
@@ -444,7 +423,7 @@ BOOL ImportScript( char* szFileName )
 							}
 							if( dw == -1 )
 							{
-								Log( "line %d: bad formatting, unrecognized relationship/comparision operator. Arg# %d.\r\n", line, count );
+								darkomen::detour::trace("WHMTG: line %d: bad formatting, unrecognized relationship/comparision operator. Arg# %d.", line, count);
 								goto lbl_end;
 							}
 							WRITE_CODE( dw );
@@ -460,7 +439,7 @@ BOOL ImportScript( char* szFileName )
 								DWORD dw;
 								if( !my_atoi( str, len, &dw ) )
 								{
-									Log( "line %d: bad formatting, expected integer value. Arg# %d.\r\n", line, i );
+									darkomen::detour::trace("WHMTG: line %d: bad formatting, expected integer value. Arg# %d.", line, i);
 									goto lbl_end;
 								}
 								if( i == 0 ) num_arg_groups = dw;
@@ -473,7 +452,7 @@ BOOL ImportScript( char* szFileName )
 								len = GetTok( str );
 								if( len == 0 )
 								{
-									Log( "line %d: %s, expected %d arguments, found %d.\r\n", line, op->name, 2 + ( num_arg_groups * 4 ), i );
+									darkomen::detour::trace("WHMTG: line %d: %s, expected %d arguments, found %d.", line, op->name, 2 + (num_arg_groups * 4), i);
 									goto lbl_end;
 								}
 							}
@@ -484,13 +463,13 @@ BOOL ImportScript( char* szFileName )
 							char* text = (char*) micro_alloc( len+1 );
 							if( text == NULL )
 							{
-								Log( "Internal Error (script line %d): Failed to allocate %d bytes. Arg# %d.\r\n", line, len+1, count );
+								darkomen::detour::trace("WHMTG: Internal Error (script line %d): Failed to allocate %d bytes. Arg# %d.", line, len + 1, count);
 								goto lbl_end;
 							}
 							LABEL_ENTRY* le = (LABEL_ENTRY*) micro_alloc( sizeof(LABEL_ENTRY) );
 							if( le == NULL )
 							{
-								Log( "Internal Error (script line %d): Failed to allocate %d bytes. Arg# %d.\r\n", line, sizeof(LABEL_ENTRY), count );
+								darkomen::detour::trace("WHMTG: Internal Error (script line %d): Failed to allocate %d bytes. Arg# %d.", line, sizeof(LABEL_ENTRY), count);
 								goto lbl_end;
 							}
 							memcpy( text, str, len );
@@ -508,7 +487,7 @@ BOOL ImportScript( char* szFileName )
 						}
 						default:
 						{
-							Log( "Internal Error (script line %d): unknown arg type. Arg# %d.\r\n", line, count );
+								   darkomen::detour::trace("WHMTG: Internal Error (script line %d): unknown arg type. Arg# %d.", line, count);
 							goto lbl_end;
 						}
 					}
@@ -517,7 +496,7 @@ BOOL ImportScript( char* szFileName )
 			}
 			if( count != op->arg_cnt )
 			{
-				Log( "line %d: %s, expected %d arguments, found %d.\r\n", line, op->name, op->arg_cnt, count );
+				darkomen::detour::trace("WHMTG: line %d: %s, expected %d arguments, found %d.", line, op->name, op->arg_cnt, count);
 				goto lbl_end;
 			}
 		}
@@ -530,7 +509,7 @@ BOOL ImportScript( char* szFileName )
 
 	if( cp >= &code[_countof(code) - 1] )
 	{
-		Log( "Error: Byte-code exceeds maximum size of %d bytes.\r\n", sizeof( code ) );
+		darkomen::detour::trace("WHMTG: Error: Byte-code exceeds maximum size of %d bytes.", sizeof(code));
 		goto lbl_end;
 	}
 
@@ -589,7 +568,7 @@ BOOL ImportScript( char* szFileName )
 			{
 				if( !memcmp( j->name, t->name, t->name_len ) )
 				{
-					OutputDebugString("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" );
+					//OutputDebugString("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" );
 					*j->addr = (DWORD)t->addr;
 					break;
 				}
@@ -597,7 +576,7 @@ BOOL ImportScript( char* szFileName )
 		}
 		if( t == NULL )
 		{
-			Log( "Error: LABEL %s not found.\r\n", j->name ); 
+			darkomen::detour::trace("WHMTG: Error: LABEL %s not found.", j->name);
 			goto lbl_end;
 		}
 	}
@@ -707,57 +686,13 @@ BOOL my_atoi( char* str, int len, DWORD* pdwResult )
 	return TRUE;
 }
 
-
-// so fun fact: OutputDebugString() isn't suitable
-// because that gets spammed with complaints of heap corruption by dark omen / the kernel
-// so here we dump to a file
-void __cdecl Log( char* fmt, ...)
-{
-	static char buf[1024];
-	static size_t pos = 0; 
-	OVERLAPPED ol;
-	int len;
-	DWORD bytes_written;
-	static HANDLE file = INVALID_HANDLE_VALUE; 
-
-	if( file == INVALID_HANDLE_VALUE )
-	{
-		if( file == INVALID_HANDLE_VALUE )
-		{
-			file = CreateFile("script_err.txt", GENERIC_WRITE, 
-				FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0
-			);
-			if( file == INVALID_HANDLE_VALUE ){ return; }
-		}
-	}
-
-	va_list args;
-    va_start(args,fmt);
-    len = wvsprintf( buf, fmt, args );
-	va_end(args);
-
-	ol.Offset = pos;
-	ol.OffsetHigh = 0; 
-	ol.hEvent = NULL;
-	
-	if( WriteFile(file, buf, len, &bytes_written,  &ol) )
-	{
-		pos += bytes_written;
-	} 
-	else
-	{
-		// GetLastError();
-	}
-}
-
-
 // read in a file
 // place a nul byte at the end.
-char* ReadInTextFile( CHAR* szFileName )
+char* ReadInTextFile( const char* szFileName )
 {
 	void* readbuf = NULL;
 	DWORD dwBytesRead = 0;
-	HANDLE hFile = CreateFile(szFileName, GENERIC_READ, FILE_SHARE_READ, NULL,
+	HANDLE hFile = createFile_orig(szFileName, GENERIC_READ, FILE_SHARE_READ, NULL,
 		OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
 	if(hFile != INVALID_HANDLE_VALUE)
 	{
@@ -785,13 +720,50 @@ char* ReadInTextFile( CHAR* szFileName )
 
 		// print error
 		char buf[320];
-		Log( "Error Accessing File: %s\"", szFileName );
+		darkomen::detour::trace("WHMTG: Error Accessing File: %s\"", szFileName);
 		FormatMessage( FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), 0, buf, sizeof(buf), NULL );
-		Log( "\"\r\n    %s\r\n", buf );
+		darkomen::detour::trace("%s", buf);
 	}
 	return (char*)readbuf;
 }
 
+/////////////////////////////
+// backup original pointers
+/////////////////////////////////
+
+struct whmtg_back {
+	DWORD* address;
+	DWORD value;
+};
+
+struct whmtg_back whmtg_orig[] = {
+	{ (DWORD*)0x0040EFB4, *((DWORD*)0x0040EFB4) },
+	{ (DWORD*)0x0040EFCC, *((DWORD*)0x0040EFCC) },
+	{ (DWORD*)0x0040EFAA, *((DWORD*)0x0040EFAA) },
+	{ (DWORD*)0x00420F56, *((DWORD*)0x00420F56) },
+	{ (DWORD*)0x00420F8E, *((DWORD*)0x00420F8E) },
+	{ (DWORD*)0x00421B83, *((DWORD*)0x00421B83) },
+	{ (DWORD*)0x00421BC6, *((DWORD*)0x00421BC6) },
+	{ (DWORD*)0x0042943F, *((DWORD*)0x0042943F) },
+	{ (DWORD*)0x0042C4F7, *((DWORD*)0x0042C4F7) },
+	{ (DWORD*)0x004D7134, *((DWORD*)0x004D7134) },
+	{ (DWORD*)0x004D715C, *((DWORD*)0x004D715C) },
+	{ (DWORD*)0x004D7184, *((DWORD*)0x004D7184) },
+	{ (DWORD*)0x004D71AC, *((DWORD*)0x004D71AC) },
+	{ (DWORD*)NULL, (DWORD)NULL }
+};
+
+void UnloadScript() {
+	DWORD dwPrevProtect;
+
+	VirtualProtect((void*)0x0040E000, 0x1F000, PAGE_READWRITE, &dwPrevProtect);
+
+	for (int i = 0; whmtg_orig[i].address != NULL; ++i) {
+		*((DWORD*)whmtg_orig[i].address) = whmtg_orig[i].value;
+	}
+
+	VirtualProtect((void*)0x0040E000, 0x1F000, dwPrevProtect, &dwPrevProtect);
+}
 
 /////////////////////////////
 // cheesy allocator

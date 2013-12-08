@@ -97,6 +97,7 @@
   <ItemGroup>
     <ClInclude Include="src\detour.h" />
     <ClInclude Include="src\functions.h" />
+    <ClInclude Include="src\import_script.h" />
     <ClInclude Include="src\modmenu.h" />
     <ClInclude Include="src\util.h" />
   </ItemGroup>

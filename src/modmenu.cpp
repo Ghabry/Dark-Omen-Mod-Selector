@@ -2,7 +2,7 @@
 #include "detour.h"
 #include "functions.h"
 #include "util.h"
-
+#include "import_script.h"
 
 namespace darkomen {
 namespace modmenu {
@@ -39,6 +39,8 @@ namespace modmenu {
 	std::vector<undoStruct> undoData;
 	// EngRel was patched using a modified Prg.exe
 	bool engrelPatched = false;
+	// WHMTG script was loaded from whmtg.txt
+	bool whmtgPatched = false;
 
 	int selectModClicked(int, int, int, int)
 	{
@@ -67,10 +69,8 @@ namespace modmenu {
 		else
 		{
 			addLabelEventHandler_orig(scene, 320 - width / 2, 390 - height, 13, 12288, width, height, 2, menuMenuLabelHovered_orig, selectModClicked, 0, 0, 12);
-			if (!engrelPatched)
-			{
-				patchEngRel();
-			}
+			patchEngRel();
+			loadWHMTG();
 		}
 	}
 
@@ -573,6 +573,7 @@ namespace modmenu {
 			}
 			updateCurrentMod();
 			patchEngRel();
+			loadWHMTG();
 		}
 		if (modHookFailed)
 		{
@@ -651,6 +652,12 @@ namespace modmenu {
 	// Revert EngRel changes
 	void undoChanges()
 	{
+		if (whmtgPatched) {
+			detour::trace("WHMTG: Unloading script");
+			UnloadScript();
+			whmtgPatched = false;
+		}
+
 		if (!engrelPatched) {
 			return;
 		}
@@ -668,6 +675,32 @@ namespace modmenu {
 
 		undoData.clear();
 		engrelPatched = false;
+	}
+
+	void loadWHMTG() {
+		if (whmtgPatched) {
+			return;
+		}
+
+		if (currentMod.empty()) {
+			return;
+		}
+
+		std::string whmtg = getCurrentModPath() + "\\whmtg.txt";
+
+		if (GetFileAttributesA(whmtg.c_str()) == -1)
+		{
+			detour::trace("No whmtg.txt found at %s. No script loaded.", whmtg.c_str());
+			return;
+		}
+
+		if (ImportScript(whmtg.c_str())) {
+			whmtgPatched = true;
+			detour::trace("WHMTG script loaded.");
+		}
+		else {
+			detour::trace("ERROR: WHMTG script loading failed.");
+		}
 	}
 
 	// Get path of currently enabled mod
