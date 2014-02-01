@@ -1,3 +1,6 @@
+// put a bmp in the Graphics\Pictures folder called x34.bmp and be able to use that as background 34...
+
+#include "header.h"
 
 namespace portrait_bk
 {
@@ -8,45 +11,29 @@ namespace portrait_bk
 	};
 
 	PORTRAIT_BACKGROUND PortraitBackgroundTable[] = {            
-		{ 0x00, "MB_Emp" },
-		{ 0x01, "MB_Empn" },
-		{ 0x02, "MB_ImpCt" },
-		{ 0x03, "MB_Hel" },
-		{ 0x04, "MB_Hel" },
-		{ 0x05, "MB_Kis" },
-		{ 0x06, "MB_KisCt" },
-		{ 0x07, "MB_Ice" },
-		{ 0x08, "MB_For" },
-		{ 0x09, "MB_Forn" },
-		{ 0x0A, "MB_Lor" },
-		{ 0x0B, "MB_Lorn" },
-		{ 0x0C, "MB_Mnt" },
-		{ 0x0D, "MB_Mntn" },
-		{ 0x0E, "MB_Moun" },
-		{ 0x0F, "MB_ParCt" },
-		{ 0x10, "MB_Desn" },
-		{ 0x11, "MB_Twn" },
-		{ 0x12, "MB_Twnn" },
-		{ 0x13, "MB_Syln" },
-		{ 0x14, "BB_Desn" },
-		{ 0x15, "BB_Emp" },
-		{ 0x16, "BB_Empn" },
-		{ 0x17, "BB_Hel" },
-		{ 0x18, "BB_Ice" },
-		{ 0x19, "BB_Kis" },
-		{ 0x1A, "BB_Lor" },
-		{ 0x1B, "BB_Lorn" },
-		{ 0x1C, "BB_Mnt" },
-		{ 0x1D, "BB_Mntn" },
-		{ 0x1E, "BB_Moun" },
-		{ 0x1F, "BB_Syln" },
-		{ 0x20, "BB_Twnn" },
-		{ 0x21, "BB_Cav" }
+		{0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},
+		{0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},
+		{0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},
+		{0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},
+		{ 0x00, NULL  }, { 0x00, NULL  }, { 0x22, "x34" }, { 0x23, "x35" },
+		{ 0x24, "x36" }, { 0x25, "x37" }, { 0x26, "x38" }, { 0x27, "x39" },
+		{ 0x28, "x40" }, { 0x29, "x41" }, { 0x2A, "x42" }, { 0x2B, "x43" },
+		{ 0x2C, "x44" }, { 0x2D, "x45" }, { 0x2E, "x46" }, { 0x2F, "x47" },
+		{ 0x30, "x48" }, { 0x31, "x49" }, { 0x32, "x50" }, { 0x33, "x51" },
+		{ 0x34, "x52" }, { 0x35, "x53" }, { 0x36, "x54" }, { 0x37, "x55" },
+		{ 0x38, "x56" }, { 0x39, "x57" }, { 0x3A, "x58" }, { 0x3B, "x59" }, 
+		{ 0x3C, "x60" }, { 0x3D, "x61" }, { 0x3E, "x62" }, { 0x3F, "x63" }
 	};
 
-	void InstallHooks()
+	void Load()
 	{
+		memcpy( PortraitBackgroundTable, (void*)0x004C1A90, 34 * sizeof( PORTRAIT_BACKGROUND ) );
 		*((PORTRAIT_BACKGROUND**)0x004018DA) = PortraitBackgroundTable; // sub_4018A0 ( PortraitsInit )
 		*((PORTRAIT_BACKGROUND**)0x0041D2D4) = PortraitBackgroundTable; // sub_41D2A0 ( WHMTG_Speak ) 
+	}
+	
+	void Unload(){
+		*((DWORD*)0x004018DA) = 0x004C1A90; // PortraitBackgroundTable
+		*((DWORD*)0x0041D2D4) = 0x004C1A90; // PortraitBackgroundTable
 	}
 }

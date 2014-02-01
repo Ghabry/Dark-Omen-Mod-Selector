@@ -722,8 +722,9 @@ char* ReadInTextFile( const char* szFileName )
 
 		// print error
 		char buf[320];
-		darkomen::detour::trace("WHMTG: Error Accessing File: %s\"", szFileName);
-		FormatMessage( FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), 0, buf, sizeof(buf), NULL );
+		DWORD dwErrorCode = GetLastError();
+		darkomen::detour::trace("Error Accessing File: %s\"", szFileName);
+		FormatMessage( FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, dwErrorCode, 0, buf, sizeof(buf), NULL );
 		darkomen::detour::trace("%s", buf);
 	}
 	return (char*)readbuf;
