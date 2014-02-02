@@ -1,6 +1,6 @@
 #include "header.h"
 
-namespace string_tables
+namespace string_table
 {
 	char* unit_names[ 0x50 ]; // replaces table at 0x004E2640
 	char* unit_desc[ 0x50 ]; // replaces table at 0x004E2780
@@ -114,3 +114,7 @@ namespace string_tables
 	}
 }
 
+// read in text file
+// null terminate newlines.
+// point to ...  
+//GlobalAlloc

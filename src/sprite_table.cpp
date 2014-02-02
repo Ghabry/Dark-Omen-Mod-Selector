@@ -146,8 +146,10 @@ namespace sprite_table
 		const char path[] = { "sprite_list.txt" };
 
 		if( 0xFFFFFFFF == GetFileAttributes( path ) ) return;
-		char* text = ReadInTextFile( path );
-		if( text == NULL ) return;
+		char* readbuf = ReadInTextFile( path );
+		if( readbuf == NULL ) return;
+		
+		char* text = readbuf;
 
 		// initialize tables by copying original data in from the game executable
 		memcpy( SpriteTable, (void*)0x004CEB50, 257 * sizeof( SPRITE_SLOT ) );
@@ -260,6 +262,7 @@ namespace sprite_table
 		} // while
 
 	the_end:
+		VirtualFree( readbuf, 0, MEM_RELEASE );
 		return;
 	} 
 
