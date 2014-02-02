@@ -1,5 +1,9 @@
 #include "header.h"
 
+
+
+BOOL __stdcall DllEntryPoint_DDraw( HINSTANCE hDll, DWORD dwReason, LPVOID lpvReserved ); // ddraw_proxy.cpp
+
 char g_szInstallDir[ MAX_PATH ];
 char g_szArmyTmpDir[ MAX_PATH ];
 
@@ -24,6 +28,8 @@ void InitPaths()
 
 BOOL __stdcall DllEntryPoint( HINSTANCE hDll, DWORD dwReason, LPVOID lpvReserved )
 {
+	DllEntryPoint_DDraw( hDll, dwReason, lpvReserved ); 
+
 	if( dwReason == DLL_PROCESS_ATTACH )
 	{
 		InitPaths();
@@ -46,3 +52,8 @@ BOOL __stdcall DllEntryPoint( HINSTANCE hDll, DWORD dwReason, LPVOID lpvReserved
 		
 	return TRUE;
 }
+
+#pragma comment(linker, "/NODEFAULTLIB") // specifically no C runtime lib (for no real reason)
+#pragma comment( lib, "kernel32" )  
+#pragma comment( lib, "user32" )  
+#pragma comment(linker, "/ENTRY:\"DllEntryPoint\"") // define entry point cause no C Lib

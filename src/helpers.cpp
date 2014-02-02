@@ -1,6 +1,17 @@
 #include "header.h"
 
 
+void __cdecl Log( char* fmt, ... )
+{
+	static char buf[1024];
+	va_list args;
+    va_start(args,fmt);
+    wvsprintf( buf, fmt, args );
+	va_end(args);
+	OutputDebugString( buf );
+}
+
+
 void SkipWhiteSpaceAndComments( char*& str ){
 	for(;;){
 		while( *str == '\x20' || *str == '\x09' ) str++; // skip white space
@@ -26,14 +37,14 @@ DWORD ReadOutInteger( char* src, __out_opt DWORD* src_bytes_read ){
 			DWORD v;
 			char c = *str;
 			if( ( c >= '0' ) && ( c <= '9' ) ) v = (DWORD)((unsigned char)(c - '0'));
-			else if( ( c >= 'a' ) && ( c <= 'f' ) ) v = (DWORD)((unsigned char)(c - 'a'));
-			else if( ( c >= 'A' ) && ( c <= 'F' ) ) v = (DWORD)((unsigned char)(c - 'A'));
+			else if( ( c >= 'a' ) && ( c <= 'f' ) ) v = (DWORD)(((unsigned char)(c - 'a') + 10 ));
+			else if( ( c >= 'A' ) && ( c <= 'F' ) ) v = (DWORD)(((unsigned char)(c - 'A') + 10 ));
 			else break; // bad digit
 			acc <<= 4;
 			acc |= v;
 		}
 	}
-	else for( char c = *str; ( c < '0' || c > '9' ); c = *(++str) ) acc = ( acc * 10 ) + ( c - '0' ); // decimal
+	else for( char c = *str; ( c >= '0' && c <= '9' ); c = *(++str) ) acc = ( acc * 10 ) + ( c - '0' ); // decimal
 	if( src_bytes_read != NULL ) *src_bytes_read = str - src;
 	return acc;
 }

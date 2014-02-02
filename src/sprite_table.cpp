@@ -96,7 +96,7 @@ namespace sprite_table
 				wsprintfA( szPath, GetGameDirStr( "[SPRITES]\\%s.spr" ), SpriteTable[i].name );				
 				LoadSprite( *((DWORD*)0x005014BC), 0, szPath, &(Loaded_Sprite_Array[loaded_count]) );
 				if( Loaded_Sprite_Array[loaded_count] != 0 ){
-					SpriteTable[i].loaded_index_sprites = loaded_count;
+					SpriteTable[i].loaded_index_sprites = (WORD) loaded_count;
 					loaded_count++;
 				}
 			}
@@ -117,7 +117,7 @@ namespace sprite_table
 				{
 					sub_00435340( *((DWORD*)0x005014BC), 4, Loaded_Banner_Array[loaded_count], *((DWORD*)0x00526D20), 0, 0, 4, 0 );
 					sub_00435340( *((DWORD*)0x005014BC), 0, Loaded_Banner_Array[loaded_count], *((DWORD*)0x00526D20), 1, 1, 4, 0 );
-					SpriteTable[i].loaded_index_banners = loaded_count;
+					SpriteTable[i].loaded_index_banners = (WORD)loaded_count;
 					loaded_count++;
 				}
 			}
@@ -137,12 +137,13 @@ namespace sprite_table
 			sub_00435340( *((DWORD*)0x005014BC), 3, Loaded_Banner_Array[loaded_count], *((DWORD*)0x00526D20), 0x50, 0x67, 4, 0 );
 			sub_00435340( *((DWORD*)0x005014BC), 5, Loaded_Banner_Array[loaded_count], *((DWORD*)0x00526D20), 0x68, 0x71, 4, 0 );
 			sub_00435340( *((DWORD*)0x005014BC), 7, Loaded_Banner_Array[loaded_count], *((DWORD*)0x00526D20), 0x32, 0x40, 4, 0 );
-			SpriteTable[HUD].loaded_index_banners = loaded_count;
+			SpriteTable[HUD].loaded_index_banners = (WORD)loaded_count;
 		}
 	}
 
 	void Load()
 	{
+		Log( "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" );
 		const char path[] = { "sprite_list.txt" };
 
 		if( 0xFFFFFFFF == GetFileAttributes( path ) ) return;

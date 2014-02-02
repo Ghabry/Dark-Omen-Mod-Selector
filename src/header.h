@@ -2,8 +2,6 @@
 
 #include <windows.h>
 
-#define Log
-
 extern char g_szInstallDir[ MAX_PATH ];
 extern char g_szArmyTmpDir[ MAX_PATH ];
 
@@ -19,6 +17,7 @@ namespace string_table		{ void Load(); void Unload(); }
 namespace windowed			{ void Load(); void Unload(); }
 
 // helpers.cpp
+void __cdecl Log( char* fmt, ... );
 void SkipWhiteSpaceAndComments( char*& str );
 DWORD ReadOutInteger( char* src, __out_opt DWORD* src_bytes_read );
 DWORD ReadOutWord( char* dst, DWORD dst_size, char* src, __out_opt DWORD* src_bytes_read );

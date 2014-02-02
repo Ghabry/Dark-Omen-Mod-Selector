@@ -97,12 +97,12 @@ namespace string_table
 		*((DWORD*)0x00452899) = 0x004E28C0; // item_name
 		*((DWORD*)0x0045B79E) = 0x004E28C0; // item_name
 
-		*((DWORD*)0x0040C2BB) = 0x004E29C0; // item_desc;
-		*((DWORD*)0x0040A840) = 0x004E29C0; // item_desc;
-		*((DWORD*)0x0040C74B) = 0x004E29C0; // item_desc;
+		*((DWORD*)0x0040C2BB) = 0x004E29C0; // item_desc
+		*((DWORD*)0x0040A840) = 0x004E29C0; // item_desc
+		*((DWORD*)0x0040C74B) = 0x004E29C0; // item_desc
 
-		*((DWORD*)0x00418A75) = 0x004E2AA8; // battle_result;
-		*((DWORD*)0x00419E5F) = 0x004E2AA8; // battle_result;
+		*((DWORD*)0x00418A75) = 0x004E2AA8; // battle_result
+		*((DWORD*)0x00419E5F) = 0x004E2AA8; // battle_result
 
 		*((DWORD*)0x0041B416) = 0x004E2B90; // mp_army_name
 		*((DWORD*)0x0041B0FC) = 0x004E2B90; // mp_army_name
@@ -110,7 +110,7 @@ namespace string_table
 
 		*((DWORD*)0x0041946D) = 0x004E2C0C; // objectives
 
-		*((DWORD*)0x00419BB7) = 0x004E2CE0; // )tip_of_the_day
+		*((DWORD*)0x00419BB7) = 0x004E2CE0; // tip_of_the_day
 	}
 }
 
