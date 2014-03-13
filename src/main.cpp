@@ -32,6 +32,7 @@ BOOL __stdcall DllEntryPoint( HINSTANCE hDll, DWORD dwReason, LPVOID lpvReserved
 
 	if( dwReason == DLL_PROCESS_ATTACH )
 	{
+		
 		InitPaths();
 
 		DWORD dwPrevProtect;	
@@ -41,11 +42,11 @@ BOOL __stdcall DllEntryPoint( HINSTANCE hDll, DWORD dwReason, LPVOID lpvReserved
 			heap_fix::Load();
 			mixed_magic::Load();
 			no_cd::Load();
-			portrait_bk::Load();
+		//	portrait_bk::Load();
 			sp_mapbord::Load();
-			sprite_table::Load();
-			string_table::Load();
-			windowed::Load();
+			xslots::Load();
+		//	string_table::Load();
+		//	windowed::Load();
 			VirtualProtect( (void*)0x00401000, 0x000BC000, dwPrevProtect, &dwPrevProtect );
 		}
 	}

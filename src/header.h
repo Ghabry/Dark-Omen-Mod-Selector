@@ -12,7 +12,7 @@ namespace mixed_magic		{ void Load(); void Unload(); }
 namespace no_cd				{ void Load(); void Unload(); }
 namespace portrait_bk		{ void Load(); void Unload(); }
 namespace sp_mapbord		{ void Load(); void Unload(); }
-namespace sprite_table		{ void Load(); void Unload(); }
+namespace xslots			{ void Load(); void Unload(); }
 namespace string_table		{ void Load(); void Unload(); }
 namespace windowed			{ void Load(); void Unload(); }
 

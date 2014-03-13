@@ -2,8 +2,7 @@
 
 namespace string_table
 {
-	char* unit_names[ 0x50 ]; // replaces table at 0x004E2640
-	char* unit_desc[ 0x50 ]; // replaces table at 0x004E2780
+
 	char* item_name[ 0x40 ]; // replaces table at 0x004E28C0
 	char* item_desc[ 0x3A ]; // replaces table at 0x004E29C0
 	char* battle_result[ 0x3A ]; // replaces table at 0x004E2AA8
@@ -11,26 +10,11 @@ namespace string_table
 	char* objectives[ 0x35 ];	// replaces table at 0x004E2C0C
 	char* tip_of_the_day[ 0x3A ]; // replaces table at 0x004E2CE0 
 
+
+
 	void Load()
 	{
-		memcpy( unit_names, (void*)0x004E2640, 0x50 * sizeof( char* ) );
-		*((DWORD*)0x00409EC2) = (DWORD)unit_names;
-		*((DWORD*)0x0040B876) = (DWORD)unit_names;
-		*((DWORD*)0x0040BE4A) = (DWORD)unit_names;
-		*((DWORD*)0x0040C20F) = (DWORD)unit_names;
-		*((DWORD*)0x0040C461) = (DWORD)unit_names;
-		*((DWORD*)0x0040D213) = (DWORD)unit_names;
-		*((DWORD*)0x0040D9C3) = (DWORD)unit_names;
-		*((DWORD*)0x0041985C) = (DWORD)unit_names;
-		*((DWORD*)0x0041A5E4) = (DWORD)unit_names;
-		*((DWORD*)0x0041B1B0) = (DWORD)unit_names;
-		*((DWORD*)0x0041B4CA) = (DWORD)unit_names;
-		*((DWORD*)0x0042671A) = (DWORD)unit_names;
-		*((DWORD*)0x004286E1) = (DWORD)unit_names;
 
-		memcpy( unit_desc, (void*)0x004E2780, 0x50 * sizeof( char* ) );
-		*((DWORD*)0x00409E63) = (DWORD)unit_desc; 
-		*((DWORD*)0x0040BDE0) = (DWORD)unit_desc;
 
 		memcpy( item_name, (void*)0x004E28C0, 0x40 * sizeof( char* ) );
 		*((DWORD*)0x0040A7AD) = (DWORD)item_name;
@@ -68,22 +52,7 @@ namespace string_table
 	}
 	
 	void Unload(){
-		*((DWORD*)0x00409EC2) = 0x004E2640; // unit names
-		*((DWORD*)0x0040B876) = 0x004E2640; // unit names
-		*((DWORD*)0x0040BE4A) = 0x004E2640; // unit names
-		*((DWORD*)0x0040C20F) = 0x004E2640; // unit names
-		*((DWORD*)0x0040C461) = 0x004E2640; // unit names
-		*((DWORD*)0x0040D213) = 0x004E2640; // unit names
-		*((DWORD*)0x0040D9C3) = 0x004E2640; // unit names
-		*((DWORD*)0x0041985C) = 0x004E2640; // unit names
-		*((DWORD*)0x0041A5E4) = 0x004E2640; // unit names
-		*((DWORD*)0x0041B1B0) = 0x004E2640; // unit names
-		*((DWORD*)0x0041B4CA) = 0x004E2640; // unit names
-		*((DWORD*)0x0042671A) = 0x004E2640; // unit names
-		*((DWORD*)0x004286E1) = 0x004E2640; // unit names
 
-		*((DWORD*)0x00409E63) = 0x004E2780; // unit_desc
-		*((DWORD*)0x0040BDE0) = 0x004E2780; // unit_desc
 
 		*((DWORD*)0x0040A7AD) = 0x004E28C0; // item_name
 		*((DWORD*)0x0040AFB0) = 0x004E28C0; // item_name

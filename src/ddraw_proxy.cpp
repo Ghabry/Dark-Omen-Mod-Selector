@@ -125,7 +125,7 @@ HRESULT __stdcall DirectDrawCreate( GUID* lpGUID, LPDIRECTDRAW* lplpDD, IUnknown
 	HRESULT hResult = E_NOTIMPL;
 	if( pDirectDrawCreate != NULL )
 	{
-		hResult = pDirectDrawCreate( lpGUID, lplpDD, pUnkOuter );
+		hResult = pDirectDrawCreate( (GUID*)lpGUID, lplpDD, pUnkOuter );
 		if( SUCCEEDED( hResult) )
 		{
 			Wrap( NULL, iid_to_vtbl( IID_IDirectDraw ), (void**)lplpDD );
