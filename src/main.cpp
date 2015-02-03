@@ -46,7 +46,6 @@ BOOL __stdcall DllEntryPoint( HINSTANCE hDll, DWORD dwReason, LPVOID lpvReserved
 			mapboard::Load();
 			xslots::Load();
 		//	string_table::Load();
-		//	windowed::Load();
 			display::Load();
 			VirtualProtect( (void*)0x00401000, 0x000BC000, dwPrevProtect, &dwPrevProtect );
 		}
