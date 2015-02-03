@@ -43,8 +43,9 @@
 				Optimization="0"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;PROXY_DLL_EXPORTS"
 				MinimalRebuild="true"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="3"
+				BufferSecurityCheck="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
@@ -199,6 +200,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\display.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\exports.def"
 				>
 			</File>
@@ -219,6 +224,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\mapboard.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\mini_crt.cpp"
 				>
 			</File>
@@ -235,16 +244,20 @@
 				>
 			</File>
 			<File
-				RelativePath=".\sp_mapbord.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\string_table.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\whmtg.cpp"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32"
 					ExcludedFromBuild="true"

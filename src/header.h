@@ -17,8 +17,9 @@ extern char g_szArmyTmpDir[ MAX_PATH ];
 namespace armytmp			{ void Load(); void Unload(); }
 namespace camera_elevation	{ void Load(); void Unload(); }
 namespace heap_fix			{ void Load(); void Unload(); }
-namespace mixed_magic		{ void Load(); void Unload(); }
 namespace mapboard			{ void Load(); void Unload(); }
+namespace mixed_magic		{ void Load(); void Unload(); }
+namespace no_cd				{ void Load(); void Unload(); }
 namespace display			{ void Load(); void Unload(); }
 namespace xslots			{ void Load(); void Unload(); }
 

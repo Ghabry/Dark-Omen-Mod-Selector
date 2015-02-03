@@ -43,10 +43,11 @@ BOOL __stdcall DllEntryPoint( HINSTANCE hDll, DWORD dwReason, LPVOID lpvReserved
 			mixed_magic::Load();
 			no_cd::Load();
 		//	portrait_bk::Load();
-			sp_mapbord::Load();
+			mapboard::Load();
 			xslots::Load();
 		//	string_table::Load();
 		//	windowed::Load();
+			display::Load();
 			VirtualProtect( (void*)0x00401000, 0x000BC000, dwPrevProtect, &dwPrevProtect );
 		}
 	}
