@@ -5,12 +5,8 @@ increment the reference count of spell sprites and magic books just before loadi
 which should allow a spellcaster to have any spell from any school of magic, without crashing 
 it should be safe to inc refs because at the end of the battle all refs are zero'd 
 
-mixed_magic and spr_extender hooks should play nice together...
+note: mixed_magic and xslots hooks need to play nice together...
 */
-
-#define DATA( name, type, address ) static type& name = (*((type*)address));
-#define HOOK_CALL( dst, src ) *((DWORD*)(((BYTE*)src) + 1)) = (((DWORD)dst) - ((DWORD)src) - 5); 
-#define FUNC( name, address, ret_type, call_convention, args ) ret_type(call_convention * const name)args = (ret_type(call_convention *)args) address;
 
 namespace mixed_magic
 {

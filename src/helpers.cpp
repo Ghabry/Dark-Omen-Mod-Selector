@@ -85,7 +85,7 @@ DWORD ReadOutWord( char* dst, DWORD dst_size, char* src, __out_opt DWORD* src_by
 
 // read in a file
 // place a nul byte at the end.
-char* ReadInTextFile( const char* szFileName ){
+char* ReadInFile( const char* szFileName ){
 	void* readbuf = NULL;
 	DWORD dwBytesRead = 0;
 	HANDLE hFile = CreateFile(szFileName, GENERIC_READ, FILE_SHARE_READ, NULL,

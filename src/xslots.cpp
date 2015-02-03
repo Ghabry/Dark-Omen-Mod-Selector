@@ -1,12 +1,8 @@
-// double the number of slots availible for sprites entries
-// new entries are read-in from "sprite_list.txt"
+// allow new units to be added without overwriting existing ones by creating
+// bigger tables for sprites, banners, portraits, army book, names, etc.
 //
-// should play nice with mixed_magic hooks
-
+// hooks should play nice with mixed_magic hooks
 #include "header.h"
-
-#define FUNC( name, address, ret_type, call_convention, args ) ret_type(call_convention * const name)args = (ret_type(call_convention *)args) address;
-#define WRITE_JMP( dst, src ) *((BYTE*)src) = 0xE9; *((DWORD*)(((BYTE*)src) + 1)) = (((DWORD)dst) - ((DWORD)src) - 5); 
 
 namespace xslots
 {
@@ -18,7 +14,7 @@ namespace xslots
 			DWORD type_id; // ?? ( always 0x8 for units ) 
 			DWORD banner_bkgrnd_id;
 		};
-		union{ // note for portaits the index is probably to yet another array...
+		union{ // note for portaits the loaded_index points to a HEAD struct in the file heads.db
 			struct{	
 				WORD loaded_index_sprites; // index in array originally pointed at by dword_526D24
 				WORD loaded_index_banners; // index in array originally pointed at by dword_526D2C
@@ -32,6 +28,11 @@ namespace xslots
 	FUNC( LoadSprite, 0x00448500, void, __cdecl, ( DWORD dx_something, DWORD unused, char* szPath, void* loaded_spr_ptr ) );
 	FUNC( LoadBanner, 0x00434B80, void, __cdecl, ( DWORD, char* szPath, void* loaded_spr_ptr, DWORD, DWORD, DWORD ) );
 	FUNC( GetGameDirStr, 0x0048A010, char*, __cdecl, ( char* szPath ) );
+	FUNC( Portraits_MakeList, 0x004018A0, void, __cdecl, ( DWORD* ) );
+	FUNC( memset, 0x004B07C0, void*, __cdecl, ( void* buffer, int ch, size_t count ) );
+	FUNC( memcpy, 0x004AFCB0, void*, __cdecl, ( void *to, const void *from, size_t count ) );
+
+
 
 	const DWORD SPRITE_FIRST =		1; // ST
 	const DWORD SPRITE_LAST =		95; // ST
@@ -51,6 +52,8 @@ namespace xslots
 	WORD offset_table[ 460 ]; // replaces the table at 004EBC88 
 	void* Loaded_Sprite_Array[ 660 ]; // replaces the dynamically allocated array pointed to by dword_526D24 
 	void* Loaded_Banner_Array[ 660 ]; // replaces the dynamically allocated array pointed to by ...
+	WORD Loaded_Portrait_Array[ 128 ]; // replaces the dynamically allocated array pointed to by dword_00533B54
+	void* heads_db;
 
 	const DWORD X_NAME_FIRST = 80;
 	const DWORD X_NAME_LAST = 179;
@@ -73,6 +76,48 @@ namespace xslots
 		if( SpriteTable[index].ref_count != 0 ) SpriteTable[index].ref_count--;
 		return SpriteTable[index].ref_count;
 	}
+
+	void __cdecl ReferencedPortraits( DWORD* arg0 ){ // replaces sub_4018A0
+		if( *arg0 == 0 ){
+			Portraits_MakeList( arg0 );	// call original
+			int count = *((DWORD*)0x005014FC);
+			for( int i = X_PORTRAIT_FIRST; i <= X_PORTRAIT_LAST; i++ ){
+				if( SpriteTable[i].ref_count != 0 ){ // if used then add to table
+					*((DWORD*)(0x00501500 + count++ * 8)) = SpriteTable[i].loaded_index;
+				}
+			}
+			*((DWORD*)0x005014FC) = count;
+		}
+	}
+
+	void PortraitInit(){ // replaces sub_41EB40
+		// init new portraits in sprite table
+		// note: game crashes for id > 0x7F
+		int id = 0x3F; // entry index in heads.db
+		for( int i = X_PORTRAIT_FIRST; i <= X_PORTRAIT_LAST; i++ ){
+			SpriteTable[ i ].loaded_index = id++;
+		}
+
+		memset( Loaded_Portrait_Array, 0xFF, sizeof(Loaded_Portrait_Array) );
+		
+		char* fname = GetGameDirStr( "[PORTRAIT]\\script\\heads.db" );
+		heads_db = ReadInFile( fname );
+
+		*((DWORD*)0x00533B54) = (DWORD) &Loaded_Portrait_Array;
+		*((BYTE*)0x004D5BD4) = 1; // g_IsPortraitInit
+		*((DWORD*)0x00533B28) = ((DWORD)heads_db) + 1;
+		*((DWORD*)0x004D5BC8) = 0; // timer
+	}
+
+	void PortraitShutdown(){ // replaces sub_41EC00
+		*((BYTE*)0x004D5BD4) = 0; // g_IsPortraitInit
+		*((DWORD*)0x00533B54) = 0; // &Loaded_Portrait_Array
+		if( heads_db != NULL ){
+			VirtualFree( heads_db, 0, MEM_RELEASE );
+			heads_db = NULL;
+		}
+	}
+
 
 	void __cdecl LoadedSpriteArrayUnloaded( ){ // replaces sub_42B600
 		for( int i = 0; i < _countof(SpriteTable); i++ ){
@@ -165,10 +210,11 @@ namespace xslots
 
 	void Load()
 	{
+		
 		// parse text file
 		const char path[] = { "xslots.txt" };
 		if( 0xFFFFFFFF == GetFileAttributes( path ) ) return;
-		char* readbuf = ReadInTextFile( path );
+		char* readbuf = ReadInFile( path );
 		if( readbuf == NULL ) return;		
 		char* text = readbuf;
 		int line = 1;
@@ -176,7 +222,7 @@ namespace xslots
 		{	
 			// temp vars
 			DWORD slot_id;
-			char buf[ 8 ]; 
+			char buf[ 12 ]; 
 			DWORD len; 
 			DWORD required_len;
 			
@@ -324,13 +370,31 @@ namespace xslots
 							text += len;
 						}
 						else{
-							Log( "xslot: Error unrecognized command \"%s\" ( line %d )", buf, line );
-							goto the_end;
+							if( 0 == strcmp( buf, "PORTRAIT" ) ){
+								if( slot_id > ( X_PORTRAIT_LAST - X_PORTRAIT_FIRST ) ){
+									Log( "xslot: Error %s exceeds max of %d ( line %d )", "slot_id", ( X_PORTRAIT_LAST - X_PORTRAIT_FIRST ), line );
+									goto the_end;
+								}
+								DWORD m3d_id = ReadOutInteger( text, &len );
+								if( len == 0 ){		
+									Log( "xslot: Error expected m3d_id ( line %d )", line );
+									goto the_end;
+								}
+								text += len;
+								
+								SPRITE_SLOT* p = &SpriteTable[ slot_id + X_PORTRAIT_FIRST ];
+								p->loaded_index = m3d_id;
+							}
+							else {
+								Log( "xslot: Error unrecognized command \"%s\" ( line %d )", buf, line );
+								goto the_end;
+							}
 						}
 					}
 				}
 			}
 		} // while
+		
 
 		// copy original data in from the game executable
 		memcpy( SpriteTable, (void*)0x004CEB50, 257 * sizeof( SPRITE_SLOT ) );
@@ -342,6 +406,12 @@ namespace xslots
 		memcpy( troop_book_banner_index,  (void*)0x004C0BC0, 0x50 * sizeof( char ) );
 
 		// install hooks
+		HOOK_CALL( &ReferencedPortraits, 0x00401C8A );
+		HOOK_CALL( &ReferencedPortraits, 0x00401E21 );
+		HOOK_CALL( PortraitShutdown, 0x0042A3C6 );
+		HOOK_CALL( PortraitInit, 0x00428A1F );
+		*((BYTE*)0x0041EE08) = 0x7F; // override max head_db entries (0x3F)
+		*((BYTE*)0x0041EC9B) = 0x7F; // override max head_db entries (0x3F)
 		WRITE_JMP( GetType, 0x004184B0 );
 		WRITE_JMP( AddRef, 0x004184D0 );
 		WRITE_JMP( Release, 0x004184F0 );
@@ -405,6 +475,14 @@ namespace xslots
 	} 
 
 	void Unload(){
+		
+		HOOK_CALL( 0x004018A0, 0x00401C8A ); // ReferencedPortraits
+		HOOK_CALL( 0x004018A0, 0x00401E21 ); // ReferencedPortraits
+		HOOK_CALL( 0x0041EC00, 0x0042A3C6 ); // PortraitShutdown
+		HOOK_CALL( 0x0041EB40, 0x00428A1F ); // PortraitInit
+		*((BYTE*)0x0041EE08) = 0x3F; // max head_db entries
+		*((BYTE*)0x0041EC9B) = 0x3F; // max head_db entries
+
 		memcpy( (void*)0x004184B0, "\x8B\x44\x24\x04\x8D", 5 );
 		memcpy( (void*)0x004184D0, "\x8B\x44\x24\x04\x8D", 5 );
 		memcpy( (void*)0x004184F0, "\x8B\x44\x24\x04\x8D", 5 );
@@ -412,7 +490,7 @@ namespace xslots
 		memcpy( (void*)0x00418540, "\x8B\x44\x24\x04\x8D", 5 );
 		memcpy( (void*)0x0042B510, "\x81\xEC\x00\x01\x00", 5 ); 
 		memcpy( (void*)0x0042B600, "\xB8\x78\xEB\x4C\x00", 5 ); 
-		memcpy( (void*)0x0042B9E0, "\x81\xEC\x00\x01\x00", 5 ); 
+		memcpy( (void*)0x0042B9E0, "\x81\xEC\x00\x01\x00", 5 );
 		*((DWORD*)0x004018DF) = 0x004CFBD0; // Portrait_First
 		*((DWORD*)0x00401910) = 0x004D09E8; // Portrait_Last
 		*((DWORD*)0x0041D3A5) = 0x004CEB78; // &(SpriteTable[0].loaded_index)

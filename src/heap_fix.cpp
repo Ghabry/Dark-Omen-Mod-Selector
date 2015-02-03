@@ -1,5 +1,6 @@
-// suppress annoying heap block corruption warnings. 
+// suppress annoying debug heap block corruption warnings
 // by rounding up allocated chunk sizes to a multiple of 16
+// (chunk size assumption made by realloc?)
 
 #include "header.h"
 

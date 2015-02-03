@@ -4,7 +4,6 @@
 
 #include "header.h"
 
-
 namespace armytmp
 {
 	LONG __stdcall RegQueryValueExAWrap( HKEY hKey, LPTSTR lpValueName, LPDWORD lpReserved, LPDWORD lpType, LPBYTE lpData, LPDWORD lpcbData )
