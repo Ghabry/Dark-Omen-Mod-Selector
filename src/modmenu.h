@@ -97,6 +97,22 @@ namespace modmenu {
 		__in  LPCTSTR lpFileName
 	);
 
+	BOOL WINAPI MyCopyFileA(
+		_In_ LPCTSTR lpExistingFileName,
+		_In_ LPCTSTR lpNewFileName,
+		_In_ BOOL    bFailIfExists
+	);
+
+	BOOL WINAPI MySetFileAttributes(
+		_In_ LPCTSTR lpFileName,
+		_In_ DWORD   dwFileAttributes
+	);
+
+	DWORD WINAPI MyGetFileAttributes(
+		_In_ LPCTSTR lpFileName
+	);
+
+
 	/**
 	 * Hooked version of replacePath.
 	 * The original converts stuff like [2PARM] to the path equivalent.

@@ -336,7 +336,7 @@ namespace modmenu {
 			file.getline(buffer, MAX_PATH);
 			currentMod = buffer;
 			lastMod = getCurrentModPath();
-			if (lastMod.empty() || GetFileAttributesA(lastMod.c_str()) == -1)
+			if (lastMod.empty() || getFileAttributes_orig(lastMod.c_str()) == -1)
 			{
 				detour::trace("Mod was invalid, reverting to original game");
 				currentMod = "";
@@ -360,6 +360,7 @@ namespace modmenu {
 
 		if (modHookFailed || currentMod.empty())
 		{
+			// No mod loaded
 			return createFile_orig(lpFileName, dwDesiredAccess, dwShareMode,
 				lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes,
 				hTemplateFile);
@@ -370,6 +371,7 @@ namespace modmenu {
 
 		if (newPath.empty())
 		{
+			// File not in dark omen path
 			return createFile_orig(lpFileName, dwDesiredAccess, dwShareMode,
 				lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes,
 				hTemplateFile);
@@ -380,6 +382,8 @@ namespace modmenu {
 			hTemplateFile);
 		if (handle == INVALID_HANDLE_VALUE)
 		{
+			// The file does not exist in the mod directory, open the original
+			// file instead
 			return createFile_orig(lpFileName, dwDesiredAccess, dwShareMode,
 				lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes,
 				hTemplateFile);
@@ -399,6 +403,7 @@ namespace modmenu {
 
 		if (modHookFailed || currentMod.empty())
 		{
+			// No mod loaded
 			return findFirstFile_orig(lpFileName, lpFindFileData);
 		}
 
@@ -407,6 +412,7 @@ namespace modmenu {
 		std::string newPath = toModPath(fileName);
 		if (newPath.empty())
 		{
+			// File not in dark omen path
 			return findFirstFile_orig(lpFileName, lpFindFileData);
 		}
 
@@ -414,6 +420,9 @@ namespace modmenu {
 
 		// Savegame and 2parm are always redirected
 		// This way only mod armies and mod savegames are displayed
+
+		// This redirection is only done for FindFirstFile because this
+		// is the API used to scan 2parm and Savegame
 
 		std::string dopath_lc = toLowerCase(darkomenPath);
 		// Redirect the Savegame path
@@ -424,7 +433,7 @@ namespace modmenu {
 			std::string modsavePath(getCurrentModPath() + "\\SaveGame");
 
 			// Create directory if missing
-			if (GetFileAttributesA(modsavePath.c_str()) == -1)
+			if (getFileAttributes_orig(modsavePath.c_str()) == -1)
 			{
 				detour::trace("Creating save directory: %s", modsavePath.c_str());
 				if (!CreateDirectoryA(modsavePath.c_str(), NULL)) {
@@ -446,9 +455,9 @@ namespace modmenu {
 			std::string mod2parm(getCurrentModPath() + "\\GameData\\2parm");
 
 			// Create directory if missing
-			if (GetFileAttributesA(mod2parm.c_str()) == -1)
+			if (getFileAttributes_orig(mod2parm.c_str()) == -1)
 			{
-				if (GetFileAttributesA(modgamedata.c_str()) == -1) {
+				if (getFileAttributes_orig(modgamedata.c_str()) == -1) {
 					detour::trace("Creating GameData directory: %s", modgamedata.c_str());
 					if (!CreateDirectoryA(modgamedata.c_str(), NULL)) {
 						detour::trace("ERROR: Directory creation failed");
@@ -483,6 +492,7 @@ namespace modmenu {
 
 		if (modHookFailed || currentMod.empty())
 		{
+			// No mod loaded
 			return deleteFile_orig(lpFileName);
 		}
 
@@ -492,17 +502,151 @@ namespace modmenu {
 
 		if (newPath.empty())
 		{
+			// File not in dark omen path
 			return deleteFile_orig(lpFileName);
 		}
 
-		if (GetFileAttributesA(newPath.c_str()) == -1)
+		if (getFileAttributes_orig(newPath.c_str()) == -1)
 		{
+			// Redirected file does not exist, delete original file instead
 			return deleteFile_orig(lpFileName);
+		}
+
+		// Delete redirected file
+		detour::trace("Redirected to: %s", newPath.c_str());
+
+		return deleteFile_orig(newPath.c_str());
+	}
+
+	BOOL WINAPI MyCopyFileA(LPCTSTR lpExistingFileName, LPCTSTR lpNewFileName, BOOL bFailIfExists)
+	{
+		char fileNameExisting[MAX_PATH + 1];
+		char fileNameNew[MAX_PATH + 1];
+		GetFullPathName(lpExistingFileName, MAX_PATH + 1, fileNameExisting, NULL);
+		GetFullPathName(lpNewFileName, MAX_PATH + 1, fileNameNew, NULL);
+		bool redirectExisting = true;
+		bool redirectNew = true;
+
+		if (modHookFailed || currentMod.empty())
+		{
+			// No mod loaded
+			return copyFile_orig(lpExistingFileName, lpNewFileName, bFailIfExists);
+		}
+
+		detour::trace("CopyFile: %s to %s", fileNameExisting, fileNameNew);
+
+		std::string newPathExisting = toModPath(fileNameExisting);
+		std::string newPathNew = toModPath(fileNameNew);
+
+		if (newPathExisting.empty() && newPathNew.empty())
+		{
+			// Source and target not in dark omen path
+			return copyFile_orig(lpExistingFileName, lpNewFileName, bFailIfExists);
+		}
+
+		if (newPathExisting.empty()) {
+			// Source file not in dark omen path
+			redirectExisting = false;
+			newPathExisting = fileNameExisting;
+		}
+
+		if (newPathNew.empty()) {
+			// Target file not in dark omen path
+			redirectNew = false;
+			newPathNew = fileNameNew;
+		}
+
+		if (redirectExisting && getFileAttributes_orig(newPathExisting.c_str()) == -1) {
+			// File being copied exists in dark omen path but not in mod path -> use non-redirected name
+			newPathExisting = lpExistingFileName;
+		}
+
+		if (redirectNew) {
+			// New file is in Dark omen directory and being redirected
+			// Try creating target directory
+
+			std::string newPathNewDirectory = getPathOfFile(newPathNew);
+			if (getFileAttributes_orig(newPathNewDirectory.c_str()) == -1) {
+				detour::trace("Creating directory: %s", newPathNewDirectory.c_str());
+				if (!CreateDirectoryA(newPathNewDirectory.c_str(), NULL)) {
+					detour::trace("ERROR: Directory creation failed");
+				}
+			}
+		}
+
+		// When the source file exists in the mod directory it will be copied, otherwise the original
+		// When the target file should be copied to the Dark Omen directory it points now to the mod dir
+
+		// Copy File
+		detour::trace("Redirected to: %s -> %s", newPathExisting.c_str(), newPathNew.c_str());
+
+		return copyFile_orig(newPathExisting.c_str(), newPathNew.c_str(), bFailIfExists);
+	}
+
+	BOOL WINAPI MySetFileAttributes(LPCTSTR lpFileName, DWORD dwFileAttributes)
+	{
+		char fileName[MAX_PATH + 1];
+		GetFullPathName(lpFileName, MAX_PATH + 1, fileName, NULL);
+
+		if (modHookFailed || currentMod.empty())
+		{
+			// No mod loaded
+			return setFileAttributes_orig(lpFileName, dwFileAttributes);
+		}
+
+		detour::trace("SetFileAttributes: %s", fileName);
+
+		std::string newPath = toModPath(fileName);
+
+		if (newPath.empty())
+		{
+			// File not in dark omen path
+			return setFileAttributes_orig(lpFileName, dwFileAttributes);
+		}
+
+		if (getFileAttributes_orig(newPath.c_str()) == -1)
+		{
+			// Redirected file does not exist, use original file
+			return setFileAttributes_orig(lpFileName, dwFileAttributes);
+		}
+
+		// Delete redirected file
+		detour::trace("Redirected to: %s", newPath.c_str());
+
+		return setFileAttributes_orig(newPath.c_str(), dwFileAttributes);
+	}
+
+	DWORD WINAPI MyGetFileAttributes(LPCTSTR lpFileName)
+	{
+		char fileName[MAX_PATH + 1];
+		GetFullPathName(lpFileName, MAX_PATH + 1, fileName, NULL);
+
+		if (modHookFailed || currentMod.empty())
+		{
+			// No mod loaded
+			return getFileAttributes_orig(lpFileName);
+		}
+
+		detour::trace("GetFileAttributes: %s", fileName);
+
+		std::string newPath = toModPath(fileName);
+
+		if (newPath.empty())
+		{
+			// File not in dark omen path
+			return getFileAttributes_orig(lpFileName);
+		}
+
+		DWORD result = getFileAttributes_orig(newPath.c_str());
+		if (result == -1)
+		{
+			// Redirected file does not exist, use original file
+			return getFileAttributes_orig(lpFileName);
 		}
 
 		detour::trace("Redirected to: %s", newPath.c_str());
 
-		return deleteFile_orig(newPath.c_str());
+		return result;
 	}
 
 	void applyHooks()
@@ -548,6 +692,15 @@ namespace modmenu {
 		detour::trace("Hooking DeleteFile");
 		deleteFile_orig = (deleteFile_t)DetourFunction((PBYTE)DeleteFileA, (PBYTE)MyDeleteFileA);
 
+		detour::trace("Hooking CopyFile");
+		copyFile_orig = (copyFile_t)DetourFunction((PBYTE)CopyFileA, (PBYTE)MyCopyFileA);
+
+		detour::trace("Hooking SetFileAttributes");
+		setFileAttributes_orig = (setFileAttributes_t)DetourFunction((PBYTE)SetFileAttributesA, (PBYTE)MySetFileAttributes);
+
+		detour::trace("Hooking GetFileAttributes");
+		getFileAttributes_orig = (getFileAttributes_t)DetourFunction((PBYTE)GetFileAttributesA, (PBYTE)MyGetFileAttributes);
+
 		char buffer[MAX_PATH + 1] = { 0 };
 		GetModuleFileNameA(NULL, buffer, MAX_PATH);
 		darkomenExePath = buffer;
@@ -564,7 +717,7 @@ namespace modmenu {
 			darkomenPath = doPath;
 			darkomenModPath = darkomenPath + "\\Mods";
 			detour::trace("Mod folder path: %s", darkomenModPath.c_str());
-			if (GetFileAttributes(darkomenModPath.c_str()) != -1)
+			if (getFileAttributes_orig(darkomenModPath.c_str()) != -1)
 			{
 				// Yeah!
 				detour::trace("Mods folder found");
@@ -688,7 +841,7 @@ namespace modmenu {
 
 		std::string whmtg = getCurrentModPath() + "\\whmtg.txt";
 
-		if (GetFileAttributesA(whmtg.c_str()) == -1)
+		if (getFileAttributes_orig(whmtg.c_str()) == -1)
 		{
 			detour::trace("No whmtg.txt found at %s. No script loaded.", whmtg.c_str());
 			return;

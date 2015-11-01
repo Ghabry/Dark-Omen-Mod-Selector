@@ -36,10 +36,29 @@ typedef BOOL (WINAPI* deleteFile_t)(
 	__in  LPCSTR lpFileName
 	);
 
+typedef BOOL (WINAPI* copyFile_t)(
+	_In_ LPCTSTR lpExistingFileName,
+	_In_ LPCTSTR lpNewFileName,
+	_In_ BOOL    bFailIfExists
+	);
+
+typedef BOOL (WINAPI* setFileAttributes_t)(
+	_In_ LPCTSTR lpFileName,
+	_In_ DWORD   dwFileAttributes
+	);
+
+typedef DWORD (WINAPI* getFileAttributes_t)(
+	_In_ LPCTSTR lpFileName
+	);
+
 /** CreateFileA */
 extern createFile_t createFile_orig;
 extern findFirstFile_t findFirstFile_orig;
 extern deleteFile_t deleteFile_orig;
+extern copyFile_t copyFile_orig;
+extern getFileAttributes_t getFileAttributes_orig;
+extern setFileAttributes_t setFileAttributes_orig;
+
 /**	Adds a label to the Dark Omen Gui */
 extern addLabel_t addLabel_orig;
 /** Assigns a label to a Dark Omen Gui Element */
