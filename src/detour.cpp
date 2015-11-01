@@ -28,20 +28,12 @@ namespace detour {
 			strrchr(darkomenExePath, '\\')[0] = '\0';
 			std::string file(darkomenExePath);
 			file += "\\trace.txt";
-			if (GetFileAttributesA(file.c_str()) == -1)
-			{
-				file += ".txt";
-				if (GetFileAttributesA(file.c_str()) == -1)
-				{
-					return;
-				}
-				MessageBoxA(NULL, "trace.txt was not found. But I found trace.txt.txt instead. File extensions are probably hidden, you can fix this in the Windows Explorer folder options.", "Dark Patch", 0x30L);
-			}
+
 			traceFile = fopen(file.c_str(), "w");
 			if (traceFile)
 			{
 				traceEnabled = true;
-				trace("Dark Patch 2013-12-08");
+				trace("Dark Patch 2015-11-01");
 			}
 		}
 	}
