@@ -106,7 +106,7 @@ SCRIPT_OP ops[] = {
 	{ 0x0041DDF0, LPS( "PUSHLV" ), LPS( "" ) },
 	{ 0x0041DF00, LPS( "ReadVariable" ), LPS( "\x04" ) }, // var
 	{ 0x0041D8A0, LPS( "RemoveBitmap" ), LPS( "" ) },
-	{ 0x0041D690, LPS( "RemoveMagic" ),	LPS( "\xFF" ) }, // unknown
+	{ 0x0041D690, LPS( "RemoveMagic" ),	LPS( "\x01" ) },
 	{ 0x0041CED0, LPS( "RemoveUnit"), LPS( "\x01" ) },
 	{ 0x0041DD00, LPS( "REPEAT"), LPS( "" ) },
 	{ 0x0041DCD0, LPS( "RETURN"), LPS( "" ) },
