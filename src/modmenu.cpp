@@ -868,8 +868,8 @@ namespace modmenu {
 		std::string modPath = darkomenModPath;
 		modPath += "\\" + currentMod;
 
-		detour::trace("Current Mod: %s", currentMod.c_str());
-		detour::trace("Current Mod Path: %s", modPath.c_str());
+		//detour::trace("Current Mod: %s", currentMod.c_str());
+		//detour::trace("Current Mod Path: %s", modPath.c_str());
 
 		return modPath;
 	}
