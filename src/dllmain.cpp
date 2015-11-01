@@ -43,21 +43,33 @@ void applyHooks()
 	*(DWORD*)0x424320 = 0x000100E9;
 	*(WORD*)0x424324 = 0x9000;
 
-	DEVMODE devmode = {0};
-	devmode.dmSize = sizeof(devmode);
-	devmode.dmBitsPerPel = 16;
-	devmode.dmFields = DM_BITSPERPEL;
-	if (!IsDebuggerPresent()) {
-		devmode.dmPelsWidth = 640;
-		devmode.dmPelsHeight = 480;
-		devmode.dmFields |= DM_PELSWIDTH | DM_PELSHEIGHT;
+	OSVERSIONINFO vinfo = { sizeof(OSVERSIONINFO) };
+	GetVersionEx(&vinfo);
+
+	bool win7_or_less = true;
+	if (vinfo.dwMajorVersion >= 7) {
+		win7_or_less = false;
+	}
+	else if (vinfo.dwMajorVersion == 6 && vinfo.dwMinorVersion >= 2) {
+		win7_or_less = false;
 	}
 
-	ChangeDisplaySettings(&devmode, CDS_FULLSCREEN);
+	if (win7_or_less) {
+		DEVMODE devmode = {0};
+		devmode.dmSize = sizeof(devmode);
+		devmode.dmBitsPerPel = 16;
+		devmode.dmFields = DM_BITSPERPEL;
+		if (!IsDebuggerPresent()) {
+			devmode.dmPelsWidth = 640;
+			devmode.dmPelsHeight = 480;
+			devmode.dmFields |= DM_PELSWIDTH | DM_PELSHEIGHT;
+		}
+		if (ChangeDisplaySettings(&devmode, CDS_TEST) == DISP_CHANGE_SUCCESSFUL) {
+			ChangeDisplaySettings(&devmode, CDS_FULLSCREEN);
+		}
+	}
 
-	//if (IsDebuggerPresent()) {
-		*(DWORD *) 0x004BF0A8 = 0; // Run in window mode (debug mode)
-	//}
+	*(DWORD *) 0x004BF0A8 = 0; // Run in window mode (debug mode)
 
 	//darkomen::ctl::applyHooksCTL();
 	darkomen::detour::init();
