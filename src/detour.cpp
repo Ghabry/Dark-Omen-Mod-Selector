@@ -33,7 +33,7 @@ namespace detour {
 			if (traceFile)
 			{
 				traceEnabled = true;
-				trace("Dark Patch 2015-11-01");
+				trace("Dark Patch 2015-11-05");
 			}
 		}
 	}

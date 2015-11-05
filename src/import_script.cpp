@@ -384,7 +384,7 @@ bool ImportScript( const char* szFileName )
 						}
 						case 5: // cmp
 						{
-							DWORD dw = -1;
+							DWORD dw = (DWORD)-1;
 							if( len == 2 )
 							{
 								if( str[1] == '=' )

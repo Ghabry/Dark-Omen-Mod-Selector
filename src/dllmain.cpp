@@ -78,7 +78,7 @@ void applyHooks()
 	VirtualProtect((void*)0x410000, 0x80000, oldProt, NULL);
 }
 #include <fstream>
-BOOL APIENTRY DllMain( HMODULE hModule,
+BOOL APIENTRY DllMain( HMODULE,
                        DWORD  ul_reason_for_call,
                        LPVOID
 					 )

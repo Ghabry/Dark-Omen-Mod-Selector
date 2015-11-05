@@ -7,6 +7,8 @@ deleteFile_t deleteFile_orig = (deleteFile_t)DeleteFileA;
 copyFile_t copyFile_orig = (copyFile_t)CopyFileA;
 getFileAttributes_t getFileAttributes_orig = (getFileAttributes_t)GetFileAttributesA;
 setFileAttributes_t setFileAttributes_orig = (setFileAttributes_t)SetFileAttributesA;
+
+windowProc_t windowProc_orig = (windowProc_t)0x0042E440;
 /**	Adds a label to the Dark Omen Gui */
 addLabel_t addLabel_orig = (addLabel_t)0x4855A0;
 /** Assigns a label to a Dark Omen Gui Element */

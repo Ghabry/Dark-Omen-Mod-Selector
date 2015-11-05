@@ -473,8 +473,9 @@ namespace modmenu {
 			return findFirstFile_orig(newPath.c_str(), lpFindFileData);
 		}
 
-		if (GetFileAttributesA(newPath.c_str()) == -1)
+		if (getFileAttributes_orig(newPath.c_str()) == -1)
 		{
+			// Not in mod directory, use original path
 			return findFirstFile_orig(lpFileName, lpFindFileData);
 		}
 
@@ -649,6 +650,16 @@ namespace modmenu {
 		return result;
 	}
 
+	LRESULT CALLBACK MyWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+	{
+		// Work around a crash when loosing focus
+		if (uMsg == WM_ACTIVATEAPP) {
+			detour::trace("Filtering WM_ACTIVEAPP");
+			return 0;
+		}
+
+		return windowProc_orig(hwnd, uMsg, wParam, lParam);
+	}
 	void applyHooks()
 	{
 		//detour::hookFunc(hookOptionMenuInit, 0x414BD7);
@@ -700,6 +711,9 @@ namespace modmenu {
 
 		detour::trace("Hooking GetFileAttributes");
 		getFileAttributes_orig = (getFileAttributes_t)DetourFunction((PBYTE)GetFileAttributesA, (PBYTE)MyGetFileAttributes);
+
+		detour::trace("Hooking WindowProc");
+		windowProc_orig = (windowProc_t)DetourFunction((PBYTE)windowProc_orig, (PBYTE)MyWindowProc);
 
 		char buffer[MAX_PATH + 1] = { 0 };
 		GetModuleFileNameA(NULL, buffer, MAX_PATH);
