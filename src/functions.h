@@ -50,6 +50,11 @@ typedef BOOL (WINAPI* setFileAttributes_t)(
 typedef DWORD (WINAPI* getFileAttributes_t)(
 	_In_ LPCTSTR lpFileName
 	);
+
+typedef BOOL (WINAPI* setCurrentDirectory_t)(
+	_In_ LPCTSTR lpPathName
+	);
+
 typedef LRESULT (CALLBACK* windowProc_t)(
 	_In_ HWND   hwnd,
 	_In_ UINT   uMsg,
@@ -64,6 +69,7 @@ extern deleteFile_t deleteFile_orig;
 extern copyFile_t copyFile_orig;
 extern getFileAttributes_t getFileAttributes_orig;
 extern setFileAttributes_t setFileAttributes_orig;
+extern setCurrentDirectory_t setCurrentDirectory_orig;
 extern windowProc_t windowProc_orig;
 
 /**	Adds a label to the Dark Omen Gui */

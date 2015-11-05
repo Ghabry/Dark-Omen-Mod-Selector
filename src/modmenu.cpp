@@ -355,8 +355,6 @@ namespace modmenu {
 		__in_opt  HANDLE hTemplateFile
 		)
 	{
-		char fileName[MAX_PATH + 1];
-		GetFullPathName(lpFileName, MAX_PATH + 1, fileName, NULL);
 
 		if (modHookFailed || currentMod.empty())
 		{
@@ -365,6 +363,10 @@ namespace modmenu {
 				lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes,
 				hTemplateFile);
 		}
+
+		char fileName[MAX_PATH + 1];
+		GetFullPathName(lpFileName, MAX_PATH + 1, fileName, NULL);
+
 		detour::trace("CreateFile: %s", fileName);
 
 		std::string newPath = toModPath(fileName);
@@ -398,14 +400,14 @@ namespace modmenu {
 		__out  LPWIN32_FIND_DATA lpFindFileData
 		)
 	{
-		char fileName[MAX_PATH + 1];
-		GetFullPathName(lpFileName, MAX_PATH + 1, fileName, NULL);
-
 		if (modHookFailed || currentMod.empty())
 		{
 			// No mod loaded
 			return findFirstFile_orig(lpFileName, lpFindFileData);
 		}
+
+		char fileName[MAX_PATH + 1];
+		GetFullPathName(lpFileName, MAX_PATH + 1, fileName, NULL);
 
 		detour::trace("FindFirstFile: %s", fileName);
 
@@ -488,14 +490,14 @@ namespace modmenu {
 		__in  LPCTSTR lpFileName
 		)
 	{
-		char fileName[MAX_PATH + 1];
-		GetFullPathName(lpFileName, MAX_PATH + 1, fileName, NULL);
-
 		if (modHookFailed || currentMod.empty())
 		{
 			// No mod loaded
 			return deleteFile_orig(lpFileName);
 		}
+
+		char fileName[MAX_PATH + 1];
+		GetFullPathName(lpFileName, MAX_PATH + 1, fileName, NULL);
 
 		detour::trace("DeleteFile: %s", fileName);
 
@@ -521,18 +523,18 @@ namespace modmenu {
 
 	BOOL WINAPI MyCopyFileA(LPCTSTR lpExistingFileName, LPCTSTR lpNewFileName, BOOL bFailIfExists)
 	{
+		if (modHookFailed || currentMod.empty())
+		{
+			// No mod loaded
+			return copyFile_orig(lpExistingFileName, lpNewFileName, bFailIfExists);
+		}
+
 		char fileNameExisting[MAX_PATH + 1];
 		char fileNameNew[MAX_PATH + 1];
 		GetFullPathName(lpExistingFileName, MAX_PATH + 1, fileNameExisting, NULL);
 		GetFullPathName(lpNewFileName, MAX_PATH + 1, fileNameNew, NULL);
 		bool redirectExisting = true;
 		bool redirectNew = true;
-
-		if (modHookFailed || currentMod.empty())
-		{
-			// No mod loaded
-			return copyFile_orig(lpExistingFileName, lpNewFileName, bFailIfExists);
-		}
 
 		detour::trace("CopyFile: %s to %s", fileNameExisting, fileNameNew);
 
@@ -586,14 +588,14 @@ namespace modmenu {
 
 	BOOL WINAPI MySetFileAttributes(LPCTSTR lpFileName, DWORD dwFileAttributes)
 	{
-		char fileName[MAX_PATH + 1];
-		GetFullPathName(lpFileName, MAX_PATH + 1, fileName, NULL);
-
 		if (modHookFailed || currentMod.empty())
 		{
 			// No mod loaded
 			return setFileAttributes_orig(lpFileName, dwFileAttributes);
 		}
+
+		char fileName[MAX_PATH + 1];
+		GetFullPathName(lpFileName, MAX_PATH + 1, fileName, NULL);
 
 		detour::trace("SetFileAttributes: %s", fileName);
 
@@ -619,14 +621,14 @@ namespace modmenu {
 
 	DWORD WINAPI MyGetFileAttributes(LPCTSTR lpFileName)
 	{
-		char fileName[MAX_PATH + 1];
-		GetFullPathName(lpFileName, MAX_PATH + 1, fileName, NULL);
-
 		if (modHookFailed || currentMod.empty())
 		{
 			// No mod loaded
 			return getFileAttributes_orig(lpFileName);
 		}
+
+		char fileName[MAX_PATH + 1];
+		GetFullPathName(lpFileName, MAX_PATH + 1, fileName, NULL);
 
 		detour::trace("GetFileAttributes: %s", fileName);
 
@@ -650,11 +652,51 @@ namespace modmenu {
 		return result;
 	}
 
+	BOOL WINAPI MySetCurrentDirectory(LPCTSTR lpPathName)
+	{
+		if (modHookFailed || currentMod.empty()) {
+			// No mod loaded
+			return setCurrentDirectory_orig(lpPathName);
+		}
+
+		char fileName[MAX_PATH + 1];
+		GetFullPathName(lpPathName, MAX_PATH + 1, fileName, NULL);
+
+		detour::trace("SetCurrentDirectory: %s", fileName);
+
+		std::string newPath = toModPath(fileName);
+
+		if (newPath.empty())
+		{
+			// File not in dark omen path
+			return setCurrentDirectory_orig(lpPathName);
+		}
+
+		// Logic different to other hooks
+		// Only redirect when the original path does not exist
+		// When it exists SetCurrentDirectory will succeed and CreateFile redirection is possible
+		if (getFileAttributes_orig(fileName) == -1)	{
+			if (getFileAttributes_orig(newPath.c_str()) == -1)
+			{
+				// Redirected file does not exist, use original file
+				return setCurrentDirectory_orig(lpPathName);
+			}
+
+			// Original folder does not exist, mod folder does -> redirect is safe
+			detour::trace("Redirected to: %s", newPath.c_str());
+			return setCurrentDirectory_orig(newPath.c_str());
+		}
+
+		detour::trace("Not redirected: Original folder exists");
+
+		return setCurrentDirectory_orig(lpPathName);
+	}
+
 	LRESULT CALLBACK MyWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		// Work around a crash when loosing focus
 		if (uMsg == WM_ACTIVATEAPP) {
-			detour::trace("Filtering WM_ACTIVEAPP");
+			detour::trace("WindowProc: Filtering WM_ACTIVEAPP");
 			return 0;
 		}
 
@@ -712,6 +754,9 @@ namespace modmenu {
 		detour::trace("Hooking GetFileAttributes");
 		getFileAttributes_orig = (getFileAttributes_t)DetourFunction((PBYTE)GetFileAttributesA, (PBYTE)MyGetFileAttributes);
 
+		detour::trace("Hooking SetCurrentDirectory");
+		setCurrentDirectory_orig = (setCurrentDirectory_t)DetourFunction((PBYTE)SetCurrentDirectoryA, (PBYTE)MySetCurrentDirectory);
+		
 		detour::trace("Hooking WindowProc");
 		windowProc_orig = (windowProc_t)DetourFunction((PBYTE)windowProc_orig, (PBYTE)MyWindowProc);
 

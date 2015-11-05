@@ -112,6 +112,10 @@ namespace modmenu {
 		_In_ LPCTSTR lpFileName
 	);
 
+	BOOL WINAPI MySetCurrentDirectory(
+		_In_ LPCTSTR lpPathName
+		);
+
 	LRESULT CALLBACK MyWindowProc(
 		_In_ HWND   hwnd,
 		_In_ UINT   uMsg,
