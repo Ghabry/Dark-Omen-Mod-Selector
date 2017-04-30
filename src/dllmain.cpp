@@ -81,6 +81,7 @@ void applyHooks()
 	//xslots::Load(); Loaded in mod menu
 	//	string_table::Load();
 	display::Load();
+	ctl::Load();
 
 	//VirtualProtect((void*)0x00401000, 0x000BC000, oldProt, &oldProt);
 }
