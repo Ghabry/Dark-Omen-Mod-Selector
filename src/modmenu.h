@@ -141,6 +141,8 @@ namespace modmenu {
 
 	void loadWHMTG();
 
+	void loadXSlots();
+
 	std::string getCurrentModPath();
 
 	bool isInDarkOmenPath(const std::string& path);

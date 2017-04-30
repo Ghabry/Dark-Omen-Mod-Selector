@@ -3,6 +3,8 @@
 //
 // hooks should play nice with mixed_magic hooks
 #include "header.h"
+#include "modmenu.h"
+#include "functions.h"
 
 namespace xslots
 {
@@ -212,9 +214,17 @@ namespace xslots
 	{
 		
 		// parse text file
-		const char path[] = { "xslots.txt" };
-		if( 0xFFFFFFFF == GetFileAttributes( path ) ) return;
-		char* readbuf = ReadInFile( path );
+		std::string path = darkomen::modmenu::getCurrentModPath();
+
+		if (path.empty())
+		{
+			return;
+		}
+
+		path += "\\PRG_ENG\\xslots.txt";
+
+		if( 0xFFFFFFFF == getFileAttributes_orig( path.c_str() ) ) return;
+		char* readbuf = ReadInFile( path.c_str() );
 		if( readbuf == NULL ) return;		
 		char* text = readbuf;
 		int line = 1;

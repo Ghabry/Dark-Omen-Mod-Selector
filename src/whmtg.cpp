@@ -1,4 +1,6 @@
 #include "header.h"
+#include "detour.h"
+#include "functions.h"
 
 #define LPS( x ) sizeof(x) - 1, x
 #define WRITE_CODE( dw ) if( cp < &code[_countof(code) - 1] ) *cp++ = dw;

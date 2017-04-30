@@ -3,6 +3,7 @@
 #include "functions.h"
 #include "util.h"
 #include "import_script.h"
+#include "header.h"
 
 namespace darkomen {
 namespace modmenu {
@@ -41,6 +42,8 @@ namespace modmenu {
 	bool engrelPatched = false;
 	// WHMTG script was loaded from whmtg.txt
 	bool whmtgPatched = false;
+	// XSlots was loaded from xslots.txt
+	bool xslotsPatched = false;
 
 	int selectModClicked(int, int, int, int)
 	{
@@ -69,8 +72,10 @@ namespace modmenu {
 		else
 		{
 			addLabelEventHandler_orig(scene, 320 - width / 2, 390 - height, 13, 12288, width, height, 2, menuMenuLabelHovered_orig, selectModClicked, 0, 0, 12);
+			
 			patchEngRel();
 			loadWHMTG();
+			loadXSlots();
 		}
 	}
 
@@ -786,6 +791,7 @@ namespace modmenu {
 			updateCurrentMod();
 			patchEngRel();
 			loadWHMTG();
+			loadXSlots();
 		}
 		if (modHookFailed)
 		{
@@ -870,6 +876,12 @@ namespace modmenu {
 			whmtgPatched = false;
 		}
 
+		if (xslotsPatched) {
+			detour::trace("XSlots: Unloading");
+			xslots::Unload();
+			xslotsPatched = false;
+		}
+
 		if (!engrelPatched) {
 			return;
 		}
@@ -913,6 +925,29 @@ namespace modmenu {
 		else {
 			detour::trace("ERROR: WHMTG script loading failed.");
 		}
+	}
+
+	void loadXSlots() {
+		if (xslotsPatched) {
+			return;
+		}
+
+		if (currentMod.empty()) {
+			return;
+		}
+
+		std::string whmtg = getCurrentModPath() + "\\PRG_ENG\\xslots.txt";
+
+		if (getFileAttributes_orig(whmtg.c_str()) == -1) {
+			detour::trace("No xslots.txt found at %s. No script loaded.", whmtg.c_str());
+			return;
+		}
+
+		detour::trace("Loading XSlots.");
+
+		// Error checking would be nice
+		xslots::Load();
+		xslotsPatched = true;
 	}
 
 	// Get path of currently enabled mod

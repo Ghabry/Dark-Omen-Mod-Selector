@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -20,12 +20,14 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -84,19 +86,32 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>externals</AdditionalLibraryDirectories>
       <AdditionalDependencies>detours.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\armytmp.cpp" />
+    <ClCompile Include="src\camera_elevation.cpp" />
     <ClCompile Include="src\detour.cpp" />
+    <ClCompile Include="src\display.cpp" />
     <ClCompile Include="src\dllmain.cpp" />
     <ClCompile Include="src\functions.cpp" />
-    <ClCompile Include="src\import_script.cpp" />
+    <ClCompile Include="src\heap_fix.cpp" />
+    <ClCompile Include="src\helpers.cpp" />
+    <ClCompile Include="src\mapboard.cpp" />
+    <ClCompile Include="src\mixed_magic.cpp" />
     <ClCompile Include="src\modmenu.cpp" />
+    <ClCompile Include="src\no_cd.cpp" />
+    <ClCompile Include="src\portrait_bk.cpp" />
+    <ClCompile Include="src\string_table.cpp" />
     <ClCompile Include="src\util.cpp" />
+    <ClCompile Include="src\whmtg.cpp" />
+    <ClCompile Include="src\xslots.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\detour.h" />
     <ClInclude Include="src\functions.h" />
+    <ClInclude Include="src\header.h" />
     <ClInclude Include="src\import_script.h" />
     <ClInclude Include="src\modmenu.h" />
     <ClInclude Include="src\util.h" />

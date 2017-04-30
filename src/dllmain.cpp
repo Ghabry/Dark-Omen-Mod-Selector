@@ -4,6 +4,7 @@
 //#include "darkomen.h"
 #include "detour.h"
 #include "modmenu.h"
+#include "header.h"
 
 extern "C" __declspec(dllexport) void __cdecl Darkomen(void) {}
 
@@ -36,12 +37,7 @@ char* convertPathString(char* input) {
 void applyHooks()
 {
 	DWORD oldProt;
-	VirtualProtect((void*)0x410000, 0x80000, PAGE_EXECUTE_READWRITE, &oldProt);
-	// NoCD Patch
-	*(WORD*) 0x48A5E0 = 0x01BA;
-	// Multiplayer overhead map in SinglePlayer
-	*(DWORD*)0x424320 = 0x000100E9;
-	*(WORD*)0x424324 = 0x9000;
+	VirtualProtect((void*)0x00401000, 0x000BC000, PAGE_EXECUTE_READWRITE, &oldProt);
 
 	OSVERSIONINFO vinfo = { sizeof(OSVERSIONINFO) };
 	GetVersionEx(&vinfo);
@@ -75,7 +71,18 @@ void applyHooks()
 	darkomen::detour::init();
 	darkomen::modmenu::applyHooks();
 
-	VirtualProtect((void*)0x410000, 0x80000, oldProt, NULL);
+	armytmp::Load();
+	camera_elevation::Load();
+	heap_fix::Load();
+	mixed_magic::Load();
+	no_cd::Load();
+	//	portrait_bk::Load();
+	mapboard::Load();
+	//xslots::Load(); Loaded in mod menu
+	//	string_table::Load();
+	display::Load();
+
+	//VirtualProtect((void*)0x00401000, 0x000BC000, oldProt, &oldProt);
 }
 #include <fstream>
 BOOL APIENTRY DllMain( HMODULE,
