@@ -82,6 +82,7 @@ void applyHooks()
 	//	string_table::Load();
 	display::Load();
 	ctl::Load();
+	multiplayer_scene::Load();
 
 	//VirtualProtect((void*)0x00401000, 0x000BC000, oldProt, &oldProt);
 }

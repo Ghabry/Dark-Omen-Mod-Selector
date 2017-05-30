@@ -102,6 +102,7 @@
     <ClCompile Include="src\mapboard.cpp" />
     <ClCompile Include="src\mixed_magic.cpp" />
     <ClCompile Include="src\modmenu.cpp" />
+    <ClCompile Include="src\multiplayer_scene.cpp" />
     <ClCompile Include="src\no_cd.cpp" />
     <ClCompile Include="src\portrait_bk.cpp" />
     <ClCompile Include="src\string_table.cpp" />
