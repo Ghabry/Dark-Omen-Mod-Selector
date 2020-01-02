@@ -24,6 +24,7 @@ namespace display			{ void Load(); void Unload(); }
 namespace xslots			{ void Load(); void Unload(); }
 namespace ctl				{ void Load(); void Unload(); }
 namespace multiplayer_scene { void Load(); void Unload(); }
+namespace dgvoodoo			{ void Load(); void Unload(); }
 
 // helpers.cpp
 char* ReadInFile( const char* szFileName );

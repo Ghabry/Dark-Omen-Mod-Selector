@@ -42,7 +42,8 @@ void applyHooks()
 	//darkomen::ctl::applyHooksCTL();
 	darkomen::detour::init();
 	darkomen::modmenu::applyHooks();
-
+	
+	dgvoodoo::Load();
 	armytmp::Load();
 	camera_elevation::Load();
 	heap_fix::Load();
