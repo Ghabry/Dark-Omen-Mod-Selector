@@ -39,34 +39,6 @@ void applyHooks()
 	DWORD oldProt;
 	VirtualProtect((void*)0x00401000, 0x000BC000, PAGE_EXECUTE_READWRITE, &oldProt);
 
-	OSVERSIONINFO vinfo = { sizeof(OSVERSIONINFO) };
-	GetVersionEx(&vinfo);
-
-	bool win7_or_less = true;
-	if (vinfo.dwMajorVersion >= 7) {
-		win7_or_less = false;
-	}
-	else if (vinfo.dwMajorVersion == 6 && vinfo.dwMinorVersion >= 2) {
-		win7_or_less = false;
-	}
-
-	if (win7_or_less) {
-		DEVMODE devmode = {0};
-		devmode.dmSize = sizeof(devmode);
-		devmode.dmBitsPerPel = 16;
-		devmode.dmFields = DM_BITSPERPEL;
-		if (!IsDebuggerPresent()) {
-			devmode.dmPelsWidth = 640;
-			devmode.dmPelsHeight = 480;
-			devmode.dmFields |= DM_PELSWIDTH | DM_PELSHEIGHT;
-		}
-		if (ChangeDisplaySettings(&devmode, CDS_TEST) == DISP_CHANGE_SUCCESSFUL) {
-			ChangeDisplaySettings(&devmode, CDS_FULLSCREEN);
-		}
-	}
-
-	*(DWORD *) 0x004BF0A8 = 0; // Run in window mode (debug mode)
-
 	//darkomen::ctl::applyHooksCTL();
 	darkomen::detour::init();
 	darkomen::modmenu::applyHooks();
